@@ -23,6 +23,12 @@ This repository contains two readable pilot scripts for wind fragility analysis 
   - Computes collapse probability by tower condition and wind direction
   - Uses published values from Bilionis and Vamvatsikos instead of pilot calibration choices
 
+- `scripts/pilot_v4_literature_class_library.py`
+  - Literature-grounded telecom class library script
+  - Uses the telecom structural classes explicitly listed in Khazaali and Bocchini's EMI 2022 portfolio summary
+  - Writes a reusable class catalog, intensity-measure standard note, and example inventory template
+  - Avoids inventing new telecom class labels
+
 ## Libraries
 
 The scripts use:
@@ -75,3 +81,4 @@ It is a direct literature-backed reproduction script rather than a pilot surroga
 See:
 
 - `docs/literature_values.md`
+- `docs/class_library_sources.md`
