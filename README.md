@@ -17,6 +17,12 @@ This repository contains two readable pilot scripts for wind fragility analysis 
   - Direction-dependent wind effects at 0, 22.5, and 45 degrees
   - Collapse fragility fitted separately by direction
 
+- `scripts/pilot_v3_published_greece_case.py`
+  - Literature-grounded reproduction script
+  - Uses published fragility parameters for a 48 m Greek steel lattice telecom tower
+  - Computes collapse probability by tower condition and wind direction
+  - Uses published values from Bilionis and Vamvatsikos instead of pilot calibration choices
+
 ## Libraries
 
 The scripts use:
@@ -43,6 +49,7 @@ Each script writes results into the repository `outputs/` folder:
 
 - `outputs/v1/`
 - `outputs/v2/`
+- `outputs/v3/`
 
 These include:
 
@@ -59,3 +66,12 @@ This repo is intentionally a pilot prototype before:
 - panel-level surrogate calibration
 - portfolio expansion using real tower inventory data
 - full Wang-style class-based fragility framework development
+
+## Literature Notes
+
+The third script is intentionally different from the first two.
+It is a direct literature-backed reproduction script rather than a pilot surrogate.
+
+See:
+
+- `docs/literature_values.md`
