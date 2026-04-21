@@ -1,10 +1,36 @@
 # Telecom Tower Fragility Pilot
 
-This repository contains readable pilot scripts for wind fragility analysis of telecommunication towers.
+This repository contains readable Jupyter notebooks and optional Python scripts for wind fragility analysis of telecommunication towers.
 
-The repo is designed so a new user can download it, install the listed Python packages, and run the pilots without editing machine-specific paths.
+The repo is designed so a new user can download it, install the listed Python packages, open the notebooks in VS Code or Jupyter, and run the cells without editing machine-specific paths.
 
-## Scripts
+## Notebook-First Workflow
+
+The recommended workflow is to use the notebooks in order:
+
+- `notebooks/01_pilot_v1_single_tower.ipynb`
+  - First MVP
+  - Single 48 m telecom tower
+  - Wind-only collapse fragility
+  - Shows observed stripe points and fitted lognormal curve inside the notebook
+
+- `notebooks/02_pilot_v2_class_based.ipynb`
+  - Synthetic class-based pilot
+  - Many slightly different towers
+  - Wind directions at 0, 22.5, and 45 degrees
+  - Plots one fragility curve per direction
+
+- `notebooks/03_pilot_v3_published_greece_case.ipynb`
+  - Literature-grounded reproduction
+  - Uses published fragility values from Bilionis and Vamvatsikos
+  - Plots published curves and design-speed collapse probabilities
+
+- `notebooks/04_pilot_v4_literature_class_library.ipynb`
+  - Literature-grounded telecom tower class library
+  - Uses class labels from Khazaali and Bocchini's telecom portfolio work
+  - Builds reusable class tables and an example inventory template
+
+## Optional Python Scripts
 
 - `scripts/pilot_v1_single_tower.py`
   - First MVP
@@ -41,6 +67,7 @@ The scripts use:
 - `matplotlib`
 - `pathlib`
 - `json`
+- `ipykernel`
 
 ## Quick Start
 
@@ -49,8 +76,9 @@ If you are using VS Code, the easiest route is:
 1. Open this repository folder in VS Code.
 2. Select a valid Python interpreter with `Python: Select Interpreter`.
 3. Install dependencies with `python -m pip install -r requirements.txt`.
-4. Open `run_all_pilots.py`.
-5. Press Run.
+4. Open `notebooks/01_pilot_v1_single_tower.ipynb`.
+5. Click `Run All` or run the cells one by one.
+6. Continue with notebooks `02`, `03`, and `04`.
 
 From a terminal, run:
 
@@ -59,12 +87,14 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python run_all_pilots.py
 ```
 
-To run scripts individually:
+Then open the notebooks in VS Code or Jupyter.
+
+To run the optional Python-script version:
 
 ```bash
+python run_all_pilots.py
 python scripts/pilot_v1_single_tower.py
 python scripts/pilot_v2_class_based.py
 python scripts/pilot_v3_published_greece_case.py
