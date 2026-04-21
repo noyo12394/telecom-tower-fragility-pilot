@@ -20,12 +20,23 @@ class-based telecom work.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import matplotlib
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
+
+# Keep Matplotlib cache repo-local so the script runs cleanly on locked-down systems.
+MPLCONFIGDIR = Path(__file__).resolve().parents[1] / "outputs" / "_matplotlib_cache"
+MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIGDIR))
+
+# Font libraries also use a cache on some systems; keep that repo-local too.
+XDG_CACHE_HOME = Path(__file__).resolve().parents[1] / "outputs" / "_cache"
+XDG_CACHE_HOME.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("XDG_CACHE_HOME", str(XDG_CACHE_HOME))
 
 # Use a non-interactive backend so the script runs cleanly in terminal-only environments.
 matplotlib.use("Agg")

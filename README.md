@@ -1,6 +1,8 @@
 # Telecom Tower Fragility Pilot
 
-This repository contains two readable pilot scripts for wind fragility analysis of self-supporting steel lattice telecommunication towers.
+This repository contains readable pilot scripts for wind fragility analysis of telecommunication towers.
+
+The repo is designed so a new user can download it, install the listed Python packages, and run the pilots without editing machine-specific paths.
 
 ## Scripts
 
@@ -42,12 +44,34 @@ The scripts use:
 
 ## Quick Start
 
-Create an environment with the required scientific Python libraries, then run:
+If you are using VS Code, the easiest route is:
+
+1. Open this repository folder in VS Code.
+2. Select a valid Python interpreter with `Python: Select Interpreter`.
+3. Install dependencies with `python -m pip install -r requirements.txt`.
+4. Open `run_all_pilots.py`.
+5. Press Run.
+
+From a terminal, run:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python run_all_pilots.py
+```
+
+To run scripts individually:
 
 ```bash
 python scripts/pilot_v1_single_tower.py
 python scripts/pilot_v2_class_based.py
+python scripts/pilot_v3_published_greece_case.py
+python scripts/pilot_v4_literature_class_library.py
 ```
+
+If you see an error like `/opt/homebrew/bin/python: no such file or directory`, the issue is the selected VS Code Python interpreter, not the fragility code. Re-select a real interpreter using `Python: Select Interpreter`.
 
 ## Outputs
 
@@ -56,6 +80,7 @@ Each script writes results into the repository `outputs/` folder:
 - `outputs/v1/`
 - `outputs/v2/`
 - `outputs/v3/`
+- `outputs/v4/`
 
 These include:
 
@@ -63,6 +88,8 @@ These include:
 - stripe results CSV
 - fragility summary JSON
 - fragility plot PNG
+
+The exact files vary by pilot version. The `outputs/` folder is ignored by Git because every user can regenerate it locally.
 
 ## Scope
 
