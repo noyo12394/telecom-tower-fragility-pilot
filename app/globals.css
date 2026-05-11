@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --font-sans:
+    "Aptos",
+    "Avenir Next",
+    "Segoe UI",
+    "Helvetica Neue",
+    "Nimbus Sans",
+    sans-serif;
+  --font-mono:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    "Cascadia Mono",
+    "Menlo",
+    "Monaco",
+    monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-paper text-ink antialiased;
+  font-family: var(--font-sans);
+  background-image:
+    radial-gradient(circle at top left, rgba(14, 116, 144, 0.08), transparent 28%),
+    linear-gradient(180deg, #eef4fb 0%, #f8fafc 26%, #f8fafc 100%);
+}
+
+a {
+  @apply text-accent underline-offset-4 transition-colors hover:text-navy hover:underline;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-white;
+}
+
+@layer components {
+  .panel-card {
+    @apply rounded-3xl border border-line bg-white shadow-panel;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold tracking-tight text-navy;
+  }
+
+  .micro-label {
+    @apply text-[11px] uppercase tracking-[0.18em] text-steel;
+    font-family: var(--font-mono);
+  }
+}
