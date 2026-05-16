@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { CompareMode } from "@/components/CompareMode";
 import { ComparisonPresets } from "@/components/ComparisonPresets";
 import { ControlsPanel } from "@/components/ControlsPanel";
+import { ElementDetailDrawer } from "@/components/ElementDetailDrawer";
+import { ElementLengthTable } from "@/components/ElementLengthTable";
 import { ExportPanel } from "@/components/ExportPanel";
 import { GeometryTable } from "@/components/GeometryTable";
+import { MaterialChart } from "@/components/MaterialChart";
 import { MemberSizes } from "@/components/MemberSizes";
 import { PhysicsEquations } from "@/components/PhysicsEquations";
 import { SourceTraceability } from "@/components/SourceTraceability";
 import { TowerVisualizer } from "@/components/TowerVisualizer";
 import { WindCalculator } from "@/components/WindCalculator";
+import { WindForceChart } from "@/components/WindForceChart";
+import { calculateAllPanelLengths } from "@/lib/elementLengths";
+import { calculateMaterialEstimate } from "@/lib/materialQuantity";
 import { buildTraceabilityRows, SOURCE_DOCUMENTS, tierClasses } from "@/lib/sources";
 import {
+  buildPanelMemberProfiles,
   COMPARISON_PRESETS,
   DEFAULT_CONFIG,
   generateTowerPanels,
@@ -20,8 +28,25 @@ import {
   type ExposureOption,
   type HeightOption,
   type PlanOption,
-  type RiskCategoryOption
+  type RiskCategoryOption,
+  type TowerConfig,
+  type UnitSystem
 } from "@/lib/tower";
+import { calculatePanelWindForces } from "@/lib/windForce";
+
+type DashboardTab = "geometry" | "lengths" | "wind" | "material" | "sources";
+
+const TAB_OPTIONS: Array<{
+  key: DashboardTab;
+  label: string;
+  shortcut: string;
+}> = [
+  { key: "geometry", label: "Tower Geometry", shortcut: "1" },
+  { key: "lengths", label: "Element Lengths", shortcut: "2" },
+  { key: "wind", label: "Wind Loads", shortcut: "3" },
+  { key: "material", label: "Material Estimate", shortcut: "4" },
+  { key: "sources", label: "Sources", shortcut: "5" }
+];
 
 function inferredPanelCountForHeight(heightMeters: HeightOption) {
   if (heightMeters === 40) {
@@ -35,18 +60,84 @@ function inferredPanelCountForHeight(heightMeters: HeightOption) {
   return 10;
 }
 
+function comparisonDefaultRight(): TowerConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    heightMeters: 80,
+    panelCount: 12,
+    bottomWidthMeters: 8.0,
+    topWidthMeters: 1.6,
+    bracing: "Double K/K-B"
+  };
+}
+
+function TabButton({
+  active,
+  label,
+  shortcut,
+  onClick
+}: {
+  active: boolean;
+  label: string;
+  shortcut: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+        active
+          ? "border-navy bg-navy text-white"
+          : "border-line bg-white text-navy hover:bg-slate-50"
+      }`}
+      aria-pressed={active}
+    >
+      {label}
+      <span className="ml-2 rounded-full border border-current/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]">
+        {shortcut}
+      </span>
+    </button>
+  );
+}
+
 export default function Page() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [compareLeftConfig, setCompareLeftConfig] = useState(DEFAULT_CONFIG);
+  const [compareRightConfig, setCompareRightConfig] = useState(
+    comparisonDefaultRight()
+  );
+  const [activeTab, setActiveTab] = useState<DashboardTab>("geometry");
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
+  const [darkMode, setDarkMode] = useState(false);
+  const [hoverEnabled, setHoverEnabled] = useState(true);
+  const [stressMode, setStressMode] = useState(false);
+  const [show3D, setShow3D] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedPanel, setSelectedPanel] = useState<number | null>(null);
 
-  const panels = generateTowerPanels(config);
+  const geometryPanels = generateTowerPanels(config);
+  const elementPanels = calculateAllPanelLengths(
+    config.heightMeters,
+    config.panelCount,
+    config.bottomWidthMeters,
+    config.topWidthMeters,
+    config.bracing
+  );
+  const memberProfiles = buildPanelMemberProfiles(config.panelCount);
   const traceabilityRows = buildTraceabilityRows(config, DEFAULT_CONFIG);
+  const materialEstimate = calculateMaterialEstimate(elementPanels, memberProfiles);
+  const windForces = calculatePanelWindForces(config, elementPanels);
 
-  function updateConfig<K extends keyof typeof DEFAULT_CONFIG>(
-    key: K,
-    value: (typeof DEFAULT_CONFIG)[K]
-  ) {
+  const selectedPanelData =
+    elementPanels.find((panel) => panel.panelIndex === selectedPanel) ?? null;
+  const selectedPanelMember =
+    memberProfiles.find((member) => member.panelNumber === selectedPanel) ?? null;
+
+  function updateConfig<K extends keyof TowerConfig>(key: K, value: TowerConfig[K]) {
     setConfig((current) => ({ ...current, [key]: value }));
   }
 
@@ -60,20 +151,155 @@ export default function Page() {
     }));
   }
 
+  useEffect(() => {
+    function handleKeydown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+
+      if (
+        tagName === "input" ||
+        tagName === "textarea" ||
+        tagName === "select" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (event.key === "1") {
+        setActiveTab("geometry");
+      }
+
+      if (event.key === "2") {
+        setActiveTab("lengths");
+      }
+
+      if (event.key === "3") {
+        setActiveTab("wind");
+      }
+
+      if (event.key === "4") {
+        setActiveTab("material");
+      }
+
+      if (event.key === "5") {
+        setActiveTab("sources");
+      }
+
+      if (event.key.toLowerCase() === "h") {
+        setHoverEnabled((current) => !current);
+      }
+
+      if (event.key.toLowerCase() === "s") {
+        setStressMode((current) => !current);
+      }
+
+      if (event.key === "#" || event.key.toLowerCase() === "v") {
+        setShow3D((current) => !current);
+      }
+
+      if (event.key.toLowerCase() === "c") {
+        setCompareMode((current) => !current);
+      }
+
+      if (event.key === "?") {
+        setShortcutsOpen((current) => !current);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, []);
+
+  const tabContent = useMemo(() => {
+    if (compareMode) {
+      return (
+        <CompareMode
+          leftConfig={compareLeftConfig}
+          rightConfig={compareRightConfig}
+          onLeftConfigChange={setCompareLeftConfig}
+          onRightConfigChange={setCompareRightConfig}
+          unitSystem={unitSystem}
+        />
+      );
+    }
+
+    if (activeTab === "geometry") {
+      return (
+        <div className="space-y-6">
+          <ComparisonPresets
+            presets={COMPARISON_PRESETS}
+            config={config}
+            onLoadPreset={(presetConfig) => setConfig(presetConfig)}
+          />
+          <GeometryTable config={config} panels={geometryPanels} />
+          <MemberSizes />
+          <ExportPanel config={config} rows={traceabilityRows} />
+        </div>
+      );
+    }
+
+    if (activeTab === "lengths") {
+      return (
+        <ElementLengthTable
+          rows={elementPanels}
+          memberProfiles={memberProfiles}
+          unitSystem={unitSystem}
+          onOpenPanel={setSelectedPanel}
+        />
+      );
+    }
+
+    if (activeTab === "wind") {
+      return (
+        <div className="space-y-6">
+          <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
+            <WindCalculator config={config} panels={geometryPanels} />
+            <WindForceChart rows={windForces} />
+          </div>
+          <PhysicsEquations config={config} />
+        </div>
+      );
+    }
+
+    if (activeTab === "material") {
+      return (
+        <div className="space-y-6">
+          <MaterialChart estimate={materialEstimate} />
+          <ExportPanel config={config} rows={traceabilityRows} />
+        </div>
+      );
+    }
+
+    return <SourceTraceability rows={traceabilityRows} />;
+  }, [
+    activeTab,
+    compareLeftConfig,
+    compareMode,
+    compareRightConfig,
+    config,
+    elementPanels,
+    geometryPanels,
+    materialEstimate,
+    memberProfiles,
+    traceabilityRows,
+    unitSystem,
+    windForces
+  ]);
+
   return (
-    <main className="min-h-screen">
+    <main className={`min-h-screen ${darkMode ? "theme-dark" : ""}`}>
       <header className="border-b border-white/10 bg-navy text-white">
-        <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1700px] px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
+            <div className="max-w-4xl">
               <p className="micro-label text-slate-300">Research dashboard</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
                 Telecom Tower Design Explorer
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200">
-                Literature-backed preliminary geometry for wind-fragility pilot
-                modeling. Built for a student preparing a professor meeting,
-                with source honesty shown for every key value.
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-200">
+                Literature-backed preliminary geometry explorer for wind-fragility
+                modeling, now extended with element-level length calculations,
+                slenderness screening, and qualitative wind/material views.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-medium">
@@ -88,7 +314,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMobileControlsOpen(true)}
@@ -99,10 +325,33 @@ export default function Page() {
               </button>
               <button
                 type="button"
+                onClick={() => setDarkMode((current) => !current)}
+                className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium transition hover:bg-white/15"
+                aria-pressed={darkMode}
+              >
+                {darkMode ? "Light mode" : "Dark mode"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCompareMode((current) => !current)}
+                className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium transition hover:bg-white/15"
+                aria-pressed={compareMode}
+              >
+                {compareMode ? "Close comparison" : "Compare two towers"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShortcutsOpen(true)}
+                className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium transition hover:bg-white/15"
+                aria-haspopup="dialog"
+              >
+                ?
+              </button>
+              <button
+                type="button"
                 onClick={() => setSourcesOpen(true)}
                 className="rounded-2xl border border-white/15 bg-white px-4 py-3 text-sm font-medium text-navy transition hover:bg-slate-100"
                 aria-haspopup="dialog"
-                aria-expanded={sourcesOpen}
               >
                 Sources
               </button>
@@ -145,7 +394,6 @@ export default function Page() {
                 type="button"
                 onClick={() => setSourcesOpen(false)}
                 className="rounded-full border border-line px-3 py-2 text-sm text-steel"
-                aria-label="Close sources modal"
               >
                 Close
               </button>
@@ -160,9 +408,20 @@ export default function Page() {
                     <h3 className="text-sm font-semibold text-navy">
                       {source.shortLabel}
                     </h3>
-                    <span className="rounded-full border border-navy/10 bg-white px-2 py-1 text-[11px] font-medium text-navy">
-                      {source.category}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full border border-navy/10 bg-white px-2 py-1 text-[11px] font-medium text-navy">
+                        {source.category}
+                      </span>
+                      {source.tier ? (
+                        <span
+                          className={`rounded-full border px-2 py-1 text-[11px] font-medium ${tierClasses(
+                            source.tier
+                          )}`}
+                        >
+                          {source.tier}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <p className="text-sm font-medium leading-6 text-ink">
                     {source.title}
@@ -170,15 +429,69 @@ export default function Page() {
                   <p className="mt-2 text-sm leading-6 text-steel">
                     {source.detail}
                   </p>
-                  <a
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex text-sm font-medium"
-                  >
-                    Open source
-                  </a>
+                  {source.clause ? (
+                    <p className="mt-2 text-xs leading-5 text-steel">
+                      Clause / note: {source.clause}
+                    </p>
+                  ) : null}
+                  {source.url ? (
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex text-sm font-medium"
+                    >
+                      Open source
+                    </a>
+                  ) : null}
                 </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {shortcutsOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Keyboard shortcuts"
+        >
+          <div className="w-full max-w-2xl rounded-[32px] bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="micro-label">Keyboard shortcuts</p>
+                <h2 className="section-title">Fast navigation and view toggles</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShortcutsOpen(false)}
+                className="rounded-full border border-line px-3 py-2 text-sm text-steel"
+              >
+                Close
+              </button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["1", "Tower Geometry tab"],
+                ["2", "Element Lengths tab"],
+                ["3", "Wind Loads tab"],
+                ["4", "Material Estimate tab"],
+                ["5", "Sources tab"],
+                ["H", "Toggle hover labels"],
+                ["S", "Toggle stress visualization"],
+                ["V or Shift+3", "Toggle 3D/isometric view"],
+                ["C", "Open or close compare mode"],
+                ["?", "Open shortcuts help"]
+              ].map(([key, meaning]) => (
+                <div
+                  key={key}
+                  className="rounded-2xl border border-line bg-slate-50 px-4 py-3"
+                >
+                  <p className="text-sm font-semibold text-navy">{key}</p>
+                  <p className="mt-1 text-sm leading-6 text-steel">{meaning}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -219,10 +532,80 @@ export default function Page() {
         </div>
       ) : null}
 
-      <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="hidden xl:block">
-            <div className="sticky top-5">
+      <div className="mx-auto max-w-[1700px] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.42fr)_minmax(0,0.58fr)]">
+          <div className="space-y-6 xl:sticky xl:top-5 xl:self-start">
+            <div className="panel-card p-4">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUnitSystem("metric")}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    unitSystem === "metric"
+                      ? "border-navy bg-navy text-white"
+                      : "border-line bg-white text-navy"
+                  }`}
+                >
+                  Metres
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUnitSystem("imperial")}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    unitSystem === "imperial"
+                      ? "border-navy bg-navy text-white"
+                      : "border-line bg-white text-navy"
+                  }`}
+                >
+                  Feet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShow3D((current) => !current)}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    show3D ? "border-accent bg-accent text-white" : "border-line bg-white text-navy"
+                  }`}
+                >
+                  {show3D ? "3D view on" : "3D view off"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStressMode((current) => !current)}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    stressMode
+                      ? "border-literature bg-literature text-white"
+                      : "border-line bg-white text-navy"
+                  }`}
+                >
+                  {stressMode ? "Stress mode on" : "Stress mode off"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHoverEnabled((current) => !current)}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    hoverEnabled
+                      ? "border-verified bg-verified text-white"
+                      : "border-line bg-white text-navy"
+                  }`}
+                >
+                  {hoverEnabled ? "Hover labels on" : "Hover labels off"}
+                </button>
+              </div>
+            </div>
+
+            <TowerVisualizer
+              config={config}
+              panels={elementPanels}
+              memberProfiles={memberProfiles}
+              unitSystem={unitSystem}
+              showStress={stressMode}
+              show3D={show3D}
+              hoverEnabled={hoverEnabled}
+              windForces={windForces}
+              onPanelSelect={setSelectedPanel}
+            />
+
+            <div className="hidden xl:block">
               <ControlsPanel
                 config={config}
                 defaultConfig={DEFAULT_CONFIG}
@@ -253,39 +636,44 @@ export default function Page() {
           </div>
 
           <div className="space-y-6">
-            <TowerVisualizer config={config} />
+            {!compareMode ? (
+              <div className="panel-card p-4">
+                <div className="flex flex-wrap gap-3">
+                  {TAB_OPTIONS.map((tab) => (
+                    <TabButton
+                      key={tab.key}
+                      active={activeTab === tab.key}
+                      label={tab.label}
+                      shortcut={tab.shortcut}
+                      onClick={() => setActiveTab(tab.key)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
-            <ComparisonPresets
-              presets={COMPARISON_PRESETS}
-              config={config}
-              onLoadPreset={(presetConfig) => setConfig(presetConfig)}
-            />
-
-            <div className="grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
-              <GeometryTable config={config} panels={panels} />
-              <WindCalculator config={config} panels={panels} />
-            </div>
-
-            <PhysicsEquations config={config} />
-
-            <div className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
-              <MemberSizes />
-              <ExportPanel config={config} rows={traceabilityRows} />
-            </div>
-
-            <SourceTraceability rows={traceabilityRows} />
+            {tabContent}
           </div>
         </div>
       </div>
 
       <footer className="border-t border-line bg-white/80">
-        <div className="mx-auto max-w-[1600px] px-4 py-6 text-sm leading-7 text-steel sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1700px] px-4 py-6 text-sm leading-7 text-steel sm:px-6 lg:px-8">
           Preliminary research visualization only. Final member capacities,
           connection design, foundation sizing, and serviceability checks
           require ASCE/SEI 10-15 and ANSI/TIA-222-H compliance verified by a
           qualified structural engineer.
         </div>
       </footer>
+
+      <ElementDetailDrawer
+        open={selectedPanel !== null}
+        panel={selectedPanelData}
+        memberProfile={selectedPanelMember}
+        unitSystem={unitSystem}
+        onClose={() => setSelectedPanel(null)}
+      />
     </main>
   );
 }
+

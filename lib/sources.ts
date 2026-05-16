@@ -17,6 +17,8 @@ export interface SourceDocument {
     | "Advisor Research Group"
     | "Method";
   detail: string;
+  clause?: string;
+  tier?: BadgeTier;
 }
 
 export interface TraceabilityRow {
@@ -47,7 +49,30 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://sp360.asce.org/PersonifyEbusiness/Merchandise/Product-Details/productId/233128914",
     category: "Code",
     detail:
-      "User-verified clauses and pages supplied for steels, thickness, slenderness, buckling equations, bolts, galvanizing, and foundations."
+      "User-verified clauses and pages supplied for steels, thickness, slenderness, buckling equations, bolts, galvanizing, and foundations.",
+    tier: "Code-Verified"
+  },
+  {
+    id: "asce10-geometry",
+    title: "ASCE/SEI 10-15 §2.3 — Geometric configurations",
+    shortLabel: "ASCE 10-15 §2.3",
+    url: "https://ascelibrary.org",
+    category: "Code",
+    detail:
+      "Used for member-length derivation from node geometry and tower configuration logic.",
+    clause: "§2.3, p. 3",
+    tier: "Code-Verified"
+  },
+  {
+    id: "asce10-slenderness",
+    title: "ASCE/SEI 10-15 §3.4 — Slenderness limits",
+    shortLabel: "ASCE 10-15 §3.4",
+    url: "https://ascelibrary.org",
+    category: "Code",
+    detail:
+      "Legs L/r ≤ 150, bracing KL/r ≤ 200, and redundants KL/r ≤ 250 for preliminary member checks.",
+    clause: "§3.4, p. 5",
+    tier: "Code-Verified"
   },
   {
     id: "tia222h",
@@ -57,7 +82,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://standards.tiaonline.org/news-media/press-releases/tia-announces-publication-tia-222-h-standard-antennas-and-supporting",
     category: "Code",
     detail:
-      "Official TIA announcement plus user-verified clause/page references for wind, exposure, serviceability, and drag equations."
+      "Official TIA announcement plus user-verified clause/page references for wind, exposure, serviceability, and drag equations.",
+    tier: "Code-Verified"
   },
   {
     id: "tia222h-standard-page",
@@ -74,7 +100,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://www.towersft.com/portals/0/Software/Docs/TSTower%20for%20latticed%20towers%20User%20Manual.pdf?ver=2022-02-08-122209-850",
     category: "Manual",
     detail:
-      "Geometry-input workflow reference for self-supporting tower height, widths, section definitions, and bracing inputs."
+      "Geometry-input workflow reference for self-supporting tower height, widths, section definitions, and bracing inputs.",
+    tier: "Literature-Backed"
   },
   {
     id: "rasool",
@@ -84,7 +111,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://www.tandfonline.com/doi/pdf/10.1080/13467581.2022.2145203",
     category: "Literature",
     detail:
-      "Height comparison study for 40 m, 60 m, and 80 m communication towers."
+      "Height comparison study for 40 m, 60 m, and 80 m communication towers.",
+    tier: "Literature-Backed"
   },
   {
     id: "bilionis",
@@ -94,7 +122,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://files.eccomasproceedia.org/papers/compdyn-2019/19629.pdf?mtime=20191121000158",
     category: "Literature",
     detail:
-      "48 m square lattice telecom tower with tapered geometry, platforms, diaphragms, and representative member sizes."
+      "48 m square lattice telecom tower with tapered geometry, platforms, diaphragms, and representative member sizes.",
+    tier: "Literature-Backed"
   },
   {
     id: "bracing-study",
@@ -103,7 +132,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://technologyjournal.net/wp-content/uploads/9-JOT1667.pdf",
     category: "Literature",
     detail:
-      "Compares Double K/K-B, X-brace, and K-Down performance under wind loading."
+      "Compares Double K/K-B, X-brace, and K-Down performance under wind loading.",
+    tier: "Literature-Backed"
   },
   {
     id: "manual52",
@@ -112,7 +142,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://cedb.asce.org/CEDBsearch/record.jsp?dockey=0058538",
     category: "Literature",
     detail:
-      "Reference for truss-type tower design logic, member behavior, and analysis framing."
+      "Reference for truss-type tower design logic, member behavior, and analysis framing.",
+    tier: "Literature-Backed"
   },
   {
     id: "khazaali-2024",
@@ -122,7 +153,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://www.sciencedirect.com/science/article/pii/S2772741624000036",
     category: "Literature",
     detail:
-      "CFD-based drag and antenna interference study; used only for antenna coefficient context."
+      "CFD-based drag and antenna interference study; used only for antenna coefficient context.",
+    tier: "Literature-Backed"
   },
   {
     id: "khazaali-dissertation",
@@ -132,7 +164,30 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://preserve.lehigh.edu/lehigh-scholarship/graduate-publications-theses-dissertations/theses-dissertations/damage",
     category: "Advisor Research Group",
     detail:
-      "Advisor research-group context for 10-panel tower configuration and mixed K/X bracing layout."
+      "Advisor research-group context for 10-panel tower configuration and mixed K/X bracing layout.",
+    tier: "Literature-Backed"
+  },
+  {
+    id: "pythagoras",
+    title: "Pythagorean theorem",
+    shortLabel: "Pythagorean Theorem",
+    url: "",
+    category: "Method",
+    detail:
+      "Elementary right-triangle geometry used for inclined leg, brace, and hip-brace lengths.",
+    clause: "Elementary geometry",
+    tier: "Derived/Assumed"
+  },
+  {
+    id: "aisc-manual",
+    title: "AISC Steel Construction Manual, 14th Edition",
+    shortLabel: "AISC Manual 14th Ed.",
+    url: "https://www.aisc.org/publications/steel-construction-manual/",
+    category: "Code",
+    detail:
+      "Used for preliminary angle-section radius of gyration and unit-weight lookups in the slenderness and material tabs.",
+    clause: "Part 1 — Dimensions and Properties",
+    tier: "Code-Verified"
   },
   {
     id: "baker2015",
@@ -142,7 +197,8 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://journals.sagepub.com/doi/10.1193/021113EQS025M",
     category: "Method",
     detail:
-      "Canonical lognormal fragility fitting form and MLE framing."
+      "Canonical lognormal fragility fitting form and MLE framing.",
+    tier: "Literature-Backed"
   }
 ];
 

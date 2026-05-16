@@ -12,6 +12,7 @@ export type BracingOption =
 export type PlanOption = "Square" | "Triangular";
 export type ExposureOption = "B" | "C" | "D";
 export type RiskCategoryOption = "I" | "II" | "III" | "IV";
+export type UnitSystem = "metric" | "imperial";
 
 export interface TowerConfig {
   heightMeters: HeightOption;
@@ -51,6 +52,22 @@ export interface MemberSizeRow {
   leg: string;
   diagonal: string;
   horizontal: string;
+}
+
+export interface PanelMemberProfile {
+  panelNumber: number;
+  referencePanelNumber: number;
+  legSection: string;
+  legPropertySection: string;
+  diagonalSection: string;
+  diagonalPropertySection: string;
+  horizontalSection: string;
+  horizontalPropertySection: string;
+  legSteel: string;
+  bracingSteel: string;
+  legFyMpa: number;
+  bracingFyMpa: number;
+  basisNote: string;
 }
 
 export const DEFAULT_CONFIG: TowerConfig = {
@@ -142,6 +159,152 @@ export const MEMBER_SIZE_ROWS: MemberSizeRow[] = [
   }
 ];
 
+const PANEL_MEMBER_REFERENCE: Record<
+  number,
+  Omit<PanelMemberProfile, "panelNumber" | "referencePanelNumber">
+> = {
+  1: {
+    legSection: "L160×160×15",
+    legPropertySection: "L160×160×15",
+    diagonalSection: "L100×100×8",
+    diagonalPropertySection: "L100×100×10",
+    horizontalSection: "L75×75×6",
+    horizontalPropertySection: "L75×75×6",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Diagonal property checks use the nearest comparable AISC angle, L100×100×10, as a preliminary proxy."
+  },
+  2: {
+    legSection: "L160×160×15",
+    legPropertySection: "L160×160×15",
+    diagonalSection: "L100×100×8",
+    diagonalPropertySection: "L100×100×10",
+    horizontalSection: "L75×75×6",
+    horizontalPropertySection: "L75×75×6",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Diagonal property checks use the nearest comparable AISC angle, L100×100×10, as a preliminary proxy."
+  },
+  3: {
+    legSection: "L160×160×15",
+    legPropertySection: "L160×160×15",
+    diagonalSection: "L90×90×7",
+    diagonalPropertySection: "L90×90×7",
+    horizontalSection: "L65×65×5",
+    horizontalPropertySection: "L65×65×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  },
+  4: {
+    legSection: "L140×140×13",
+    legPropertySection: "L140×140×13",
+    diagonalSection: "L90×90×7",
+    diagonalPropertySection: "L90×90×7",
+    horizontalSection: "L65×65×5",
+    horizontalPropertySection: "L65×65×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  },
+  5: {
+    legSection: "L140×140×13",
+    legPropertySection: "L140×140×13",
+    diagonalSection: "L80×80×8",
+    diagonalPropertySection: "L80×80×8",
+    horizontalSection: "L50×50×5",
+    horizontalPropertySection: "L50×50×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Represents the larger end of the Bilionis mid-height diagonal group for a conservative preliminary check."
+  },
+  6: {
+    legSection: "L120×120×12",
+    legPropertySection: "L120×120×12",
+    diagonalSection: "L70×70×6",
+    diagonalPropertySection: "L70×70×6",
+    horizontalSection: "L50×50×5",
+    horizontalPropertySection: "L50×50×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  },
+  7: {
+    legSection: "L120×120×12",
+    legPropertySection: "L120×120×12",
+    diagonalSection: "L70×70×6",
+    diagonalPropertySection: "L70×70×6",
+    horizontalSection: "L50×50×5",
+    horizontalPropertySection: "L50×50×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  },
+  8: {
+    legSection: "L100×100×10",
+    legPropertySection: "L100×100×10",
+    diagonalSection: "L60×60×5",
+    diagonalPropertySection: "L60×60×5",
+    horizontalSection: "L45×45×5",
+    horizontalPropertySection: "L45×45×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  },
+  9: {
+    legSection: "L100×100×10",
+    legPropertySection: "L100×100×10",
+    diagonalSection: "L60×60×5",
+    diagonalPropertySection: "L60×60×5",
+    horizontalSection: "L45×45×5",
+    horizontalPropertySection: "L45×45×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  },
+  10: {
+    legSection: "L80×80×8",
+    legPropertySection: "L80×80×8",
+    diagonalSection: "L45×45×5",
+    diagonalPropertySection: "L45×45×5",
+    horizontalSection: "L45×45×5",
+    horizontalPropertySection: "L45×45×5",
+    legSteel: "ASTM A572 Grade 50",
+    bracingSteel: "ASTM A36",
+    legFyMpa: 345,
+    bracingFyMpa: 250,
+    basisNote:
+      "Mapped from the Bilionis 10-panel member-size baseline and used here as a preliminary section assignment."
+  }
+};
+
 export function widthAtElevation(
   bottomWidthMeters: number,
   topWidthMeters: number,
@@ -218,8 +381,63 @@ export function formatMeters(value: number) {
   return `${value.toFixed(1)} m`;
 }
 
+export function metersToFeet(value: number) {
+  return value * 3.280839895;
+}
+
+export function feetToMeters(value: number) {
+  return value / 3.280839895;
+}
+
+export function formatLength(valueMeters: number, unitSystem: UnitSystem) {
+  if (unitSystem === "imperial") {
+    return `${metersToFeet(valueMeters).toFixed(2)} ft`;
+  }
+
+  return `${valueMeters.toFixed(3)} m`;
+}
+
+export function formatLengthShort(valueMeters: number, unitSystem: UnitSystem) {
+  if (unitSystem === "imperial") {
+    return `${metersToFeet(valueMeters).toFixed(1)} ft`;
+  }
+
+  return `${valueMeters.toFixed(2)} m`;
+}
+
 export function formatAngle(value: number) {
   return `${value.toFixed(1)}°`;
+}
+
+function referencePanelNumberForActualPanel(
+  panelNumber: number,
+  panelCount: number
+) {
+  const midpointRatio = (panelNumber - 0.5) / panelCount;
+  return Math.min(10, Math.max(1, Math.ceil(midpointRatio * 10)));
+}
+
+export function buildPanelMemberProfiles(panelCount: number): PanelMemberProfile[] {
+  return Array.from({ length: panelCount }, (_, index) => {
+    const panelNumber = index + 1;
+    const referencePanelNumber = referencePanelNumberForActualPanel(
+      panelNumber,
+      panelCount
+    );
+    const reference = PANEL_MEMBER_REFERENCE[referencePanelNumber];
+
+    return {
+      panelNumber,
+      referencePanelNumber,
+      ...reference
+    };
+  });
+}
+
+export function panelMemberProfile(panelNumber: number, panelCount: number) {
+  return buildPanelMemberProfiles(panelCount).find(
+    (profile) => profile.panelNumber === panelNumber
+  );
 }
 
 export function buildAdvisorExplanation(config: TowerConfig) {

@@ -1,5 +1,18 @@
 # Telecom Tower Fragility Pilot
 
+This repository now includes two parallel pieces of work:
+
+- the original notebook/script fragility pilots
+- a web dashboard called `Telecom Tower Design Explorer`
+
+Live dashboard:
+
+- https://telecom-tower-fragility-pilot.vercel.app
+
+Dashboard guide:
+
+- `docs/dashboard_guide.md`
+
 This repository contains readable Jupyter notebooks and optional Python scripts for wind fragility analysis of telecommunication towers.
 
 The repo is designed so a new user can download it, install the listed Python packages, open the notebooks in VS Code or Jupyter, and run the cells without editing machine-specific paths.
