@@ -2,12 +2,23 @@
 
 import { useState } from "react";
 
-import { buildAdvisorExplanation, buildGeometryCsv, type TowerConfig } from "@/lib/tower";
+import { type DesignCheckSummary } from "@/lib/designChecks";
+import { type PanelElementLengths } from "@/lib/elementLengths";
+import { type MaterialEstimate } from "@/lib/materialQuantity";
+import {
+  buildAnalysisBundle,
+  buildDesignSummary,
+  buildPrintableReportHtml
+} from "@/lib/reporting";
 import type { TraceabilityRow } from "@/lib/sources";
+import { buildAdvisorExplanation, buildGeometryCsv, type TowerConfig } from "@/lib/tower";
 
 interface ExportPanelProps {
   config: TowerConfig;
   rows: TraceabilityRow[];
+  checks: DesignCheckSummary;
+  material: MaterialEstimate;
+  panels: PanelElementLengths[];
 }
 
 function downloadTextFile(fileName: string, text: string, mimeType: string) {
@@ -18,37 +29,6 @@ function downloadTextFile(fileName: string, text: string, mimeType: string) {
   anchor.download = fileName;
   anchor.click();
   URL.revokeObjectURL(url);
-}
-
-function buildDesignSummary(config: TowerConfig, rows: TraceabilityRow[]) {
-  const header = [
-    "Telecom Tower Design Explorer",
-    "Literature-backed preliminary geometry for wind-fragility pilot modeling",
-    ""
-  ];
-
-  const configurationLines = [
-    `Height: ${config.heightMeters} m`,
-    `Panels: ${config.panelCount}`,
-    `Base width: ${config.bottomWidthMeters.toFixed(1)} m`,
-    `Top width: ${config.topWidthMeters.toFixed(1)} m`,
-    `Bracing: ${config.bracing}`,
-    `Plan: ${config.plan}`,
-    `Wind speed: ${config.windSpeedMph} mph`,
-    `Exposure: ${config.exposure}`,
-    `Risk Category: ${config.riskCategory}`,
-    `Appurtenances: ${config.appurtenances ? "On" : "Off"}`,
-    ""
-  ];
-
-  const traceLines = rows.map(
-    (row) =>
-      `- ${row.parameter}: ${row.value} | ${row.tier} | ${row.sourceLabel} | ${row.clausePage}`
-  );
-
-  return [...header, ...configurationLines, "Traceability:", ...traceLines].join(
-    "\n"
-  );
 }
 
 function buildPhysicsReferenceHtml(config: TowerConfig) {
@@ -81,12 +61,41 @@ function buildPhysicsReferenceHtml(config: TowerConfig) {
 </html>`;
 }
 
-export function ExportPanel({ config, rows }: ExportPanelProps) {
+export function ExportPanel({
+  config,
+  rows,
+  checks,
+  material,
+  panels
+}: ExportPanelProps) {
   const [message, setMessage] = useState<string>("");
 
   async function copyText(label: string, text: string) {
     await navigator.clipboard.writeText(text);
     setMessage(`${label} copied`);
+    window.setTimeout(() => setMessage(""), 2400);
+  }
+
+  function openPrintableReport() {
+    const reportWindow = window.open("", "_blank", "noopener,noreferrer");
+
+    if (!reportWindow) {
+      setMessage("Popup blocked");
+      window.setTimeout(() => setMessage(""), 2400);
+      return;
+    }
+
+    reportWindow.document.write(
+      buildPrintableReportHtml({
+        config,
+        rows,
+        checks,
+        material,
+        panels
+      })
+    );
+    reportWindow.document.close();
+    setMessage("Printable report opened");
     window.setTimeout(() => setMessage(""), 2400);
   }
 
@@ -121,7 +130,9 @@ export function ExportPanel({ config, rows }: ExportPanelProps) {
 
         <button
           type="button"
-          onClick={() => copyText("Design summary", buildDesignSummary(config, rows))}
+          onClick={() =>
+            copyText("Design summary", buildDesignSummary(config, rows, checks))
+          }
           className="rounded-2xl border border-line bg-slate-50 px-4 py-4 text-left text-sm font-medium text-navy transition hover:border-accent/40 hover:bg-white"
         >
           Copy design summary
@@ -141,6 +152,38 @@ export function ExportPanel({ config, rows }: ExportPanelProps) {
           type="button"
           onClick={() =>
             downloadTextFile(
+              "telecom-tower-analysis-bundle.json",
+              JSON.stringify(
+                buildAnalysisBundle({
+                  config,
+                  rows,
+                  checks,
+                  material,
+                  panels
+                }),
+                null,
+                2
+              ),
+              "application/json;charset=utf-8"
+            )
+          }
+          className="rounded-2xl border border-line bg-slate-50 px-4 py-4 text-left text-sm font-medium text-navy transition hover:border-accent/40 hover:bg-white"
+        >
+          Download analysis bundle JSON
+        </button>
+
+        <button
+          type="button"
+          onClick={openPrintableReport}
+          className="rounded-2xl border border-line bg-slate-50 px-4 py-4 text-left text-sm font-medium text-navy transition hover:border-accent/40 hover:bg-white"
+        >
+          Open print-ready report
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            downloadTextFile(
               "physics-equations-reference.html",
               buildPhysicsReferenceHtml(config),
               "text/html;charset=utf-8"
@@ -151,6 +194,11 @@ export function ExportPanel({ config, rows }: ExportPanelProps) {
           Download physics reference HTML
         </button>
       </div>
+
+      <p className="mt-4 text-sm leading-6 text-steel">
+        The printable report opens in a new tab so you can use the browser print
+        dialog to save a PDF for your professor meeting.
+      </p>
     </section>
   );
 }

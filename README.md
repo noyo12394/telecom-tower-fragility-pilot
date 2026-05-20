@@ -5,6 +5,15 @@ This repository now includes two parallel pieces of work:
 - the original notebook/script fragility pilots
 - a web dashboard called `Telecom Tower Design Explorer`
 
+The dashboard now includes:
+
+- interactive tower geometry and bracing visualization
+- panel-by-panel element length calculations
+- preliminary `KL/r` design-check summaries
+- saved local design cases and comparison snapshots
+- print-ready report export and JSON analysis bundles
+- source-traceability and assumptions/limitations panels
+
 Live dashboard:
 
 - https://telecom-tower-fragility-pilot.vercel.app

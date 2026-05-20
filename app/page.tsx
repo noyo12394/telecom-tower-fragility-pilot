@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { AssumptionsPanel } from "@/components/AssumptionsPanel";
 import { CompareMode } from "@/components/CompareMode";
 import { ComparisonPresets } from "@/components/ComparisonPresets";
 import { ControlsPanel } from "@/components/ControlsPanel";
+import { DesignChecks } from "@/components/DesignChecks";
 import { ElementDetailDrawer } from "@/components/ElementDetailDrawer";
 import { ElementLengthTable } from "@/components/ElementLengthTable";
 import { ExportPanel } from "@/components/ExportPanel";
@@ -13,9 +15,11 @@ import { MaterialChart } from "@/components/MaterialChart";
 import { MemberSizes } from "@/components/MemberSizes";
 import { PhysicsEquations } from "@/components/PhysicsEquations";
 import { SourceTraceability } from "@/components/SourceTraceability";
+import { SavedCasesPanel } from "@/components/SavedCasesPanel";
 import { TowerVisualizer } from "@/components/TowerVisualizer";
 import { WindCalculator } from "@/components/WindCalculator";
 import { WindForceChart } from "@/components/WindForceChart";
+import { calculateDesignChecks } from "@/lib/designChecks";
 import { calculateAllPanelLengths } from "@/lib/elementLengths";
 import { calculateMaterialEstimate } from "@/lib/materialQuantity";
 import { buildTraceabilityRows, SOURCE_DOCUMENTS, tierClasses } from "@/lib/sources";
@@ -34,7 +38,13 @@ import {
 } from "@/lib/tower";
 import { calculatePanelWindForces } from "@/lib/windForce";
 
-type DashboardTab = "geometry" | "lengths" | "wind" | "material" | "sources";
+type DashboardTab =
+  | "geometry"
+  | "lengths"
+  | "checks"
+  | "wind"
+  | "material"
+  | "sources";
 
 const TAB_OPTIONS: Array<{
   key: DashboardTab;
@@ -43,9 +53,10 @@ const TAB_OPTIONS: Array<{
 }> = [
   { key: "geometry", label: "Tower Geometry", shortcut: "1" },
   { key: "lengths", label: "Element Lengths", shortcut: "2" },
-  { key: "wind", label: "Wind Loads", shortcut: "3" },
-  { key: "material", label: "Material Estimate", shortcut: "4" },
-  { key: "sources", label: "Sources", shortcut: "5" }
+  { key: "checks", label: "Design Checks", shortcut: "3" },
+  { key: "wind", label: "Wind Loads", shortcut: "4" },
+  { key: "material", label: "Material Estimate", shortcut: "5" },
+  { key: "sources", label: "Sources", shortcut: "6" }
 ];
 
 function inferredPanelCountForHeight(heightMeters: HeightOption) {
@@ -131,6 +142,11 @@ export default function Page() {
   const traceabilityRows = buildTraceabilityRows(config, DEFAULT_CONFIG);
   const materialEstimate = calculateMaterialEstimate(elementPanels, memberProfiles);
   const windForces = calculatePanelWindForces(config, elementPanels);
+  const designCheckSummary = calculateDesignChecks({
+    config,
+    panels: elementPanels,
+    memberProfiles
+  });
 
   const selectedPanelData =
     elementPanels.find((panel) => panel.panelIndex === selectedPanel) ?? null;
@@ -174,14 +190,18 @@ export default function Page() {
       }
 
       if (event.key === "3") {
-        setActiveTab("wind");
+        setActiveTab("checks");
       }
 
       if (event.key === "4") {
-        setActiveTab("material");
+        setActiveTab("wind");
       }
 
       if (event.key === "5") {
+        setActiveTab("material");
+      }
+
+      if (event.key === "6") {
         setActiveTab("sources");
       }
 
@@ -213,13 +233,33 @@ export default function Page() {
   const tabContent = useMemo(() => {
     if (compareMode) {
       return (
-        <CompareMode
-          leftConfig={compareLeftConfig}
-          rightConfig={compareRightConfig}
-          onLeftConfigChange={setCompareLeftConfig}
-          onRightConfigChange={setCompareRightConfig}
-          unitSystem={unitSystem}
-        />
+        <div className="space-y-6">
+          <CompareMode
+            leftConfig={compareLeftConfig}
+            rightConfig={compareRightConfig}
+            onLeftConfigChange={setCompareLeftConfig}
+            onRightConfigChange={setCompareRightConfig}
+            unitSystem={unitSystem}
+          />
+          <SavedCasesPanel
+            config={config}
+            compareMode={compareMode}
+            compareLeftConfig={compareLeftConfig}
+            compareRightConfig={compareRightConfig}
+            unitSystem={unitSystem}
+            onLoadSingle={(loadedConfig, loadedUnitSystem) => {
+              setCompareMode(false);
+              setConfig(loadedConfig);
+              setUnitSystem(loadedUnitSystem);
+            }}
+            onLoadCompare={(leftConfig, rightConfig, loadedUnitSystem) => {
+              setCompareMode(true);
+              setCompareLeftConfig(leftConfig);
+              setCompareRightConfig(rightConfig);
+              setUnitSystem(loadedUnitSystem);
+            }}
+          />
+        </div>
       );
     }
 
@@ -233,7 +273,13 @@ export default function Page() {
           />
           <GeometryTable config={config} panels={geometryPanels} />
           <MemberSizes />
-          <ExportPanel config={config} rows={traceabilityRows} />
+          <ExportPanel
+            config={config}
+            rows={traceabilityRows}
+            checks={designCheckSummary}
+            material={materialEstimate}
+            panels={elementPanels}
+          />
         </div>
       );
     }
@@ -265,7 +311,40 @@ export default function Page() {
       return (
         <div className="space-y-6">
           <MaterialChart estimate={materialEstimate} />
-          <ExportPanel config={config} rows={traceabilityRows} />
+          <ExportPanel
+            config={config}
+            rows={traceabilityRows}
+            checks={designCheckSummary}
+            material={materialEstimate}
+            panels={elementPanels}
+          />
+        </div>
+      );
+    }
+
+    if (activeTab === "checks") {
+      return (
+        <div className="space-y-6">
+          <DesignChecks summary={designCheckSummary} unitSystem={unitSystem} />
+          <SavedCasesPanel
+            config={config}
+            compareMode={compareMode}
+            compareLeftConfig={compareLeftConfig}
+            compareRightConfig={compareRightConfig}
+            unitSystem={unitSystem}
+            onLoadSingle={(loadedConfig, loadedUnitSystem) => {
+              setCompareMode(false);
+              setConfig(loadedConfig);
+              setUnitSystem(loadedUnitSystem);
+            }}
+            onLoadCompare={(leftConfig, rightConfig, loadedUnitSystem) => {
+              setCompareMode(true);
+              setCompareLeftConfig(leftConfig);
+              setCompareRightConfig(rightConfig);
+              setUnitSystem(loadedUnitSystem);
+            }}
+          />
+          <AssumptionsPanel rows={traceabilityRows} />
         </div>
       );
     }
@@ -277,6 +356,7 @@ export default function Page() {
     compareMode,
     compareRightConfig,
     config,
+    designCheckSummary,
     elementPanels,
     geometryPanels,
     materialEstimate,
@@ -476,9 +556,10 @@ export default function Page() {
               {[
                 ["1", "Tower Geometry tab"],
                 ["2", "Element Lengths tab"],
-                ["3", "Wind Loads tab"],
-                ["4", "Material Estimate tab"],
-                ["5", "Sources tab"],
+                ["3", "Design Checks tab"],
+                ["4", "Wind Loads tab"],
+                ["5", "Material Estimate tab"],
+                ["6", "Sources tab"],
                 ["H", "Toggle hover labels"],
                 ["S", "Toggle stress visualization"],
                 ["V or Shift+3", "Toggle 3D/isometric view"],
@@ -593,6 +674,28 @@ export default function Page() {
               </div>
             </div>
 
+            {designCheckSummary.warnings.length ? (
+              <div className="panel-card p-4">
+                <p className="micro-label">Active review warnings</p>
+                <div className="mt-3 space-y-2">
+                  {designCheckSummary.warnings.slice(0, 3).map((warning) => (
+                    <div
+                      key={warning.id}
+                      className={`rounded-2xl border px-4 py-3 text-sm ${
+                        warning.severity === "warning"
+                          ? "border-red-500/30 bg-red-500/10 text-red-700"
+                          : warning.severity === "caution"
+                          ? "border-literature/30 bg-literature/10 text-literature"
+                          : "border-derived/30 bg-derived/10 text-derived"
+                      }`}
+                    >
+                      <strong>{warning.title}:</strong> {warning.detail}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <TowerVisualizer
               config={config}
               panels={elementPanels}
@@ -676,4 +779,3 @@ export default function Page() {
     </main>
   );
 }
-

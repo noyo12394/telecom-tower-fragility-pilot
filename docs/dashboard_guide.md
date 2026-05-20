@@ -18,9 +18,11 @@ It helps you:
 
 - define a pilot tower geometry
 - see how the tower shape changes when you change inputs
+- calculate panel-by-panel element lengths and preliminary design checks
 - track which values come from standards, literature, or assumptions
 - view a simple wind-pressure calculation by elevation
-- export a clean design summary for discussion
+- save and reload cases for professor review
+- export a clean design summary or print-ready report for discussion
 
 It is not a final structural design tool.
 
@@ -62,13 +64,12 @@ The dashboard is easiest to understand in this order:
 1. Header
 2. Controls panel
 3. Tower visualization
-4. Comparison presets
-5. Geometry table
-6. Wind calculator
-7. Physics equations
-8. Member sizes
-9. Export panel
-10. Source traceability panel
+4. `Tower Geometry` tab
+5. `Element Lengths` tab
+6. `Design Checks` tab
+7. `Wind Loads` tab
+8. `Material Estimate` tab
+9. `Sources` tab
 
 ## 5. Header
 
@@ -261,7 +262,31 @@ Use this when you want to explain:
 - how each panel is defined
 - where the geometry is derived rather than directly copied from one paper
 
-## 10. Wind Calculator
+## 10. Element Lengths and Design Checks
+
+The `Element Lengths` tab breaks the tower into member-level geometry.
+
+For each panel, it can show:
+
+- leg length
+- X-brace or K-brace diagonal length
+- sub-horizontal length where relevant
+- horizontal chord length
+- hip-brace diagonal where relevant
+
+Click a panel row to open the detailed panel calculation card.
+
+The `Design Checks` tab then gathers the review workflow into one place:
+
+- pass / close / exceed counts
+- worst `KL/r` trend
+- critical panel list
+- saved case tools
+- assumptions and limitations summary
+
+This is the best tab to show when your professor asks what still needs verification.
+
+## 11. Wind Calculator
 
 This section gives a live panel-by-panel wind calculation summary.
 
@@ -286,7 +311,7 @@ Best way to use it:
 
 That makes the wind-height idea much easier to explain.
 
-## 11. Physics Equations
+## 12. Physics Equations
 
 This panel shows the main equations used in the app as reference cards.
 
@@ -314,7 +339,7 @@ If someone asks for a simple interpretation:
 - buckling equations relate slenderness and steel strength
 - the fragility equation is the probability model used later in risk work
 
-## 12. Member Sizes Panel
+## 13. Member Sizes Panel
 
 This panel shows the embedded preliminary member-size table.
 
@@ -329,7 +354,7 @@ If asked what to say:
 
 > These are useful pilot sizes for visualization and discussion, but final use would require proper code checks on slenderness, compression, connection design, and serviceability.
 
-## 13. Export Panel
+## 14. Export Panel
 
 This section is for taking information out of the dashboard.
 
@@ -338,6 +363,8 @@ Buttons:
 - `Download geometry CSV`
 - `Copy design summary`
 - `Copy advisor explanation`
+- `Download analysis bundle JSON`
+- `Open print-ready report`
 - `Download physics reference`
 
 What each one is for:
@@ -348,10 +375,25 @@ What each one is for:
   - gives a plain-language summary of the current setup
 - `Copy advisor explanation`
   - gives a ready paragraph explaining how the design logic was chosen
+- `Download analysis bundle JSON`
+  - gives a reusable file containing the active configuration, design checks, material estimate, and traceability rows
+- `Open print-ready report`
+  - opens a browser-friendly report that can be printed or saved as PDF
 - `Download physics reference`
   - gives a printable equation/reference sheet
 
-## 14. Source Traceability Panel
+## 15. Saved Cases and Source Traceability
+
+The dashboard now also includes a `Saved Cases` section inside the design-check workflow.
+
+Use it to:
+
+- save the current tower case in browser storage
+- save comparison snapshots
+- export/import saved study sets as JSON
+- reopen cases during a professor meeting without rebuilding them manually
+
+The source traceability panel is still one of the most important sections in the app.
 
 This is one of the most important sections in the app.
 
@@ -373,7 +415,7 @@ Use this section when someone asks:
 
 This panel is the main defense against accidental over-claiming.
 
-## 15. Best Workflow for a Professor Meeting
+## 16. Best Workflow for a Professor Meeting
 
 A simple presentation flow is:
 
@@ -382,11 +424,12 @@ A simple presentation flow is:
 3. Show the default `60 m` tower visualization.
 4. Point to the left controls and explain which values are editable.
 5. Show the geometry table to explain taper and panelization.
-6. Show the wind calculator to explain live pressure with height.
-7. Use the source traceability panel to separate code, literature, and assumptions.
-8. Use the export panel if you want to send a clean summary after the meeting.
+6. Open the `Element Lengths` or `Design Checks` tab to show that the model is now doing member-level review rather than just drawing a tower.
+7. Show the wind calculator to explain live pressure with height.
+8. Use the source traceability panel to separate code, literature, and assumptions.
+9. Use the export panel or print-ready report if you want to send a clean summary after the meeting.
 
-## 16. What Not to Claim
+## 17. What Not to Claim
 
 Do not say:
 
@@ -401,7 +444,7 @@ Safer wording:
 - it separates code-verified, literature-backed, and derived values
 - it helps organize tower geometry and wind-fragility inputs before deeper structural modeling
 
-## 17. Best One-Sentence Summary
+## 18. Best One-Sentence Summary
 
 If you need one simple sentence:
 
