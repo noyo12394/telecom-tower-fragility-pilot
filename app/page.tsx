@@ -22,6 +22,7 @@ import { WindCalculator } from "@/components/WindCalculator";
 import { WindForceChart } from "@/components/WindForceChart";
 import { FragilityCurveChart } from "@/components/FragilityCurveChart";
 import { DesignWorkflow } from "@/components/DesignWorkflow";
+import { LatticeLab } from "@/components/LatticeLab";
 import { calculateDesignChecks } from "@/lib/designChecks";
 import { calculateAllPanelLengths } from "@/lib/elementLengths";
 import { calculateMaterialEstimate } from "@/lib/materialQuantity";
@@ -49,7 +50,8 @@ type DashboardTab =
   | "wind"
   | "material"
   | "fragility"
-  | "sources";
+  | "sources"
+  | "lab";
 
 const TAB_OPTIONS: Array<{
   key: DashboardTab;
@@ -63,7 +65,8 @@ const TAB_OPTIONS: Array<{
   { key: "wind", label: "Wind Loads", shortcut: "5" },
   { key: "material", label: "Material Estimate", shortcut: "6" },
   { key: "fragility", label: "Fragility Curves", shortcut: "7" },
-  { key: "sources", label: "Sources", shortcut: "8" }
+  { key: "sources", label: "Sources", shortcut: "8" },
+  { key: "lab", label: "Lattice Design Lab", shortcut: "9" }
 ];
 
 function inferredPanelCountForHeight(heightMeters: HeightOption) {
@@ -220,6 +223,10 @@ export default function Page() {
 
       if (event.key === "8") {
         setActiveTab("sources");
+      }
+
+      if (event.key === "9") {
+        setActiveTab("lab");
       }
 
       if (event.key.toLowerCase() === "h") {
@@ -395,6 +402,10 @@ export default function Page() {
           <AssumptionsPanel rows={traceabilityRows} />
         </div>
       );
+    }
+
+    if (activeTab === "lab") {
+      return <LatticeLab />;
     }
 
     return <SourceTraceability rows={traceabilityRows} />;
@@ -631,6 +642,7 @@ export default function Page() {
                 ["6", "Material Estimate tab"],
                 ["7", "Fragility Curves tab"],
                 ["8", "Sources tab"],
+                ["9", "Lattice Design Lab"],
                 ["H", "Toggle hover labels"],
                 ["S", "Toggle stress visualization"],
                 ["V or Shift+3", "Toggle 3D/isometric view"],
