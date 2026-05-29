@@ -17,7 +17,8 @@ const config: Config = {
         verified: "#15803d",
         literature: "#d97706",
         derived: "#2563eb",
-        accent: "#0f766e"
+        accent: "#0f766e",
+        cyan: "#22d3ee"
       },
       boxShadow: {
         panel: "0 16px 40px rgba(15, 23, 42, 0.08)"

@@ -105,8 +105,8 @@ function TabButton({
       onClick={onClick}
       className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
         active
-          ? "border-navy bg-navy text-white"
-          : "border-line bg-white text-navy hover:bg-slate-50"
+          ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.25)]"
+          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white"
       }`}
       aria-pressed={active}
     >
@@ -129,7 +129,7 @@ export default function Page() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [hoverEnabled, setHoverEnabled] = useState(true);
   const [stressMode, setStressMode] = useState(false);
   const [show3D, setShow3D] = useState(false);
@@ -411,12 +411,14 @@ export default function Page() {
 
   return (
     <main className={`min-h-screen ${darkMode ? "theme-dark" : ""}`}>
-      <header className="border-b border-white/10 bg-navy text-white">
+      <header className="relative overflow-hidden border-b border-white/8 bg-gradient-to-br from-[#060e1a] via-[#0a1628] to-[#0d1f3c]">
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 top-0 h-64 w-64 rounded-full bg-blue-500/8 blur-3xl" />
         <div className="mx-auto max-w-[1700px] px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-4xl">
-              <p className="micro-label text-slate-300">Research dashboard</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
+              <p className="micro-label text-cyan-400">⚡ LIVE ANALYSIS ENGINE</p>
+              <h1 className="mt-3 bg-gradient-to-r from-white via-slate-200 to-cyan-300 bg-clip-text text-transparent text-4xl font-bold tracking-tight sm:text-5xl">
                 Telecom Tower Design Explorer
               </h1>
               <p className="mt-4 max-w-3xl text-base leading-7 text-slate-200">
@@ -499,6 +501,24 @@ export default function Page() {
           </div>
         </div>
       </header>
+
+      <div className="border-b border-white/8 bg-[#060e1a]/90">
+        <div className="mx-auto max-w-[1700px] px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap gap-6">
+            {[
+              { label: "Tower Height", value: `${config.heightMeters} m` },
+              { label: "Wind Speed", value: `${config.windSpeedMph} mph` },
+              { label: "Panels", value: `${config.panelCount}` },
+              { label: "Checks", value: `${designCheckSummary.counts.pass}✓ ${designCheckSummary.counts.exceeds > 0 ? designCheckSummary.counts.exceeds + "✗" : ""}` },
+            ].map(kpi => (
+              <div key={kpi.label} className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 uppercase tracking-widest">{kpi.label}</span>
+                <span className="text-sm font-semibold text-cyan-300">{kpi.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {sourcesOpen ? (
         <div
