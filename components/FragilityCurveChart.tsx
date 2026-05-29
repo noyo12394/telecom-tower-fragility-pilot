@@ -160,7 +160,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
         <svg
           ref={svgRef}
           viewBox={`0 0 ${W} ${H}`}
-          className="min-w-[560px] w-full rounded-[28px] border border-line bg-slate-50 cursor-crosshair"
+          className="min-w-[560px] w-full rounded-[28px] border border-white/10 bg-[#0d1a2d] cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverX(null)}
           role="img"
@@ -174,7 +174,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
                 y1={yForProb(p)}
                 x2={PAD.left + PLOT_W}
                 y2={yForProb(p)}
-                stroke="#e2e8f0"
+                stroke="#1e3a5f"
                 strokeWidth="1"
               />
               <text
@@ -182,7 +182,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
                 y={yForProb(p) + 4}
                 textAnchor="end"
                 fontSize="11"
-                fill="#64748b"
+                fill="#94a3b8"
               >
                 {(p * 100).toFixed(0)}%
               </text>
@@ -195,7 +195,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
                 y1={PAD.top}
                 x2={xForSpeed(v, unitSystem)}
                 y2={PAD.top + PLOT_H}
-                stroke="#e2e8f0"
+                stroke="#1e3a5f"
                 strokeWidth="1"
               />
               <text
@@ -203,7 +203,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
                 y={PAD.top + PLOT_H + 18}
                 textAnchor="middle"
                 fontSize="11"
-                fill="#64748b"
+                fill="#94a3b8"
               >
                 {v}
               </text>
@@ -216,7 +216,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
             y={H - 6}
             textAnchor="middle"
             fontSize="12"
-            fill="#475569"
+            fill="#94a3b8"
             fontWeight="500"
           >
             Wind Speed ({unitSystem === "imperial" ? "mph" : "m/s"})
@@ -226,7 +226,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
             y={PAD.top + PLOT_H / 2}
             textAnchor="middle"
             fontSize="12"
-            fill="#475569"
+            fill="#94a3b8"
             fontWeight="500"
             transform={`rotate(-90, 16, ${PAD.top + PLOT_H / 2})`}
           >
@@ -268,7 +268,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
             y1={PAD.top}
             x2={xDesign}
             y2={PAD.top + PLOT_H}
-            stroke="#1e3a5f"
+            stroke="#22d3ee"
             strokeWidth="2"
             strokeDasharray="8 4"
           />
@@ -276,7 +276,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
             x={xDesign + 5}
             y={PAD.top + 16}
             fontSize="11"
-            fill="#1e3a5f"
+            fill="#22d3ee"
             fontWeight="600"
           >
             {unitSystem === "imperial"
@@ -321,7 +321,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
             width={PLOT_W}
             height={PLOT_H}
             fill="none"
-            stroke="#cbd5e1"
+            stroke="#1e3a5f"
             strokeWidth="1"
           />
         </svg>

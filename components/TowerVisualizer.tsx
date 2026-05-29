@@ -141,12 +141,12 @@ function planViewThumbnail(plan: TowerConfig["plan"]) {
       <svg viewBox="0 0 120 90" className="h-20 w-24" aria-hidden="true">
         <polygon
           points="60,12 108,74 12,74"
-          fill="rgba(17, 35, 60, 0.04)"
-          stroke="#11233c"
+          fill="rgba(34, 211, 238, 0.08)"
+          stroke="#67e8f9"
           strokeWidth="4"
         />
-        <line x1="60" y1="12" x2="12" y2="74" stroke="#64748b" strokeWidth="3" />
-        <line x1="60" y1="12" x2="108" y2="74" stroke="#64748b" strokeWidth="3" />
+        <line x1="60" y1="12" x2="12" y2="74" stroke="#94a3b8" strokeWidth="3" />
+        <line x1="60" y1="12" x2="108" y2="74" stroke="#94a3b8" strokeWidth="3" />
       </svg>
     );
   }
@@ -158,12 +158,12 @@ function planViewThumbnail(plan: TowerConfig["plan"]) {
         y="14"
         width="80"
         height="60"
-        fill="rgba(17, 35, 60, 0.04)"
-        stroke="#11233c"
+        fill="rgba(34, 211, 238, 0.08)"
+        stroke="#67e8f9"
         strokeWidth="4"
       />
-      <line x1="20" y1="14" x2="100" y2="74" stroke="#64748b" strokeWidth="3" />
-      <line x1="100" y1="14" x2="20" y2="74" stroke="#64748b" strokeWidth="3" />
+      <line x1="20" y1="14" x2="100" y2="74" stroke="#94a3b8" strokeWidth="3" />
+      <line x1="100" y1="14" x2="20" y2="74" stroke="#94a3b8" strokeWidth="3" />
     </svg>
   );
 }
@@ -670,10 +670,10 @@ export function TowerVisualizer({
                 width="132"
                 height="96"
                 rx="20"
-                fill="#ffffff"
-                stroke="#dbe3ee"
+                fill="#0d1a2d"
+                stroke="#1e3a5f"
               />
-              <text x="14" y="18" fontSize="11" fill="#64748b">
+              <text x="14" y="18" fontSize="11" fill="#94a3b8">
                 Plan view
               </text>
               <g transform="translate(12, 18)">{planViewThumbnail(config.plan)}</g>
