@@ -77,91 +77,87 @@ function TowerElevationSVG({
   nPanels: number;
   height: number;
 }) {
-  const W = 400;
-  const H = 600;
-  const PAD = 36;
-  const drawW = W - PAD * 2;
-  const drawH = H - PAD * 2;
+  const W = 340;
+  const H = 520;
+  const PAD_LEFT = 40;
+  const PAD_RIGHT = 16;
+  const PAD_TOP = 16;
+  const PAD_BOT = 28;
+  const drawW = W - PAD_LEFT - PAD_RIGHT;
+  const drawH = H - PAD_TOP - PAD_BOT;
 
-  // x: world x → svg x; z: world z → svg y (flipped)
   const xMin = Math.min(...nodes.map((n) => n.x));
   const xMax = Math.max(...nodes.map((n) => n.x));
   const xRange = xMax - xMin || 1;
-  const zRange = height;
 
   function toSvgX(x: number) {
-    return PAD + ((x - xMin) / xRange) * drawW;
+    return PAD_LEFT + ((x - xMin) / xRange) * drawW;
   }
   function toSvgY(z: number) {
-    return PAD + (1 - z / zRange) * drawH;
+    return PAD_TOP + (1 - z / height) * drawH;
   }
 
   const panelHeight = height / nPanels;
+  // thin fixed strokes — diagonal stress is naturally high so don't scale too much
+  function strokeW(el: TowerElement) {
+    const u = Math.min(utilisation(el, allowable), 1.5);
+    if (el.memberType === "leg") return 1.2 + u * 1.5;
+    if (el.memberType === "horizontal") return 0.8 + u * 0.8;
+    return 0.6 + u * 0.6; // diagonals stay thin
+  }
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full">
-      {/* height labels */}
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 480 }}>
+      {/* background */}
+      <rect x={PAD_LEFT} y={PAD_TOP} width={drawW} height={drawH} fill="rgba(255,255,255,0.02)" rx={4} />
+
+      {/* height grid lines + labels */}
       {Array.from({ length: nPanels + 1 }).map((_, i) => {
         const z = i * panelHeight;
         const sy = toSvgY(z);
         return (
           <g key={i}>
-            <line x1={PAD - 6} y1={sy} x2={PAD} y2={sy} stroke="#475569" strokeWidth={0.8} />
-            <text x={PAD - 8} y={sy + 4} textAnchor="end" fill="#475569" fontSize={9}>
+            <line x1={PAD_LEFT} y1={sy} x2={PAD_LEFT + drawW} y2={sy} stroke="#1e3a5f" strokeWidth={0.5} />
+            <line x1={PAD_LEFT - 5} y1={sy} x2={PAD_LEFT} y2={sy} stroke="#475569" strokeWidth={0.8} />
+            <text x={PAD_LEFT - 7} y={sy + 3.5} textAnchor="end" fill="#64748b" fontSize={8}>
               {z.toFixed(0)}m
             </text>
           </g>
         );
       })}
 
-      {/* members */}
-      {elements.map((el) => {
-        const nodeIX = el.nodeI.x;
-        const nodeIZ = el.nodeI.z;
-        const nodeJX = el.nodeJ.x;
-        const nodeJZ = el.nodeJ.z;
-        const u = utilisation(el, allowable);
-        const sw = Math.max(0.5, 1 + u * 3);
+      {/* members — draw legs last so they appear on top */}
+      {[
+        ...elements.filter((e) => e.memberType === "diagonal"),
+        ...elements.filter((e) => e.memberType === "horizontal"),
+        ...elements.filter((e) => e.memberType === "leg"),
+      ].map((el) => {
         const col = memberColor(el, allowable);
         return (
           <line
             key={el.id}
-            x1={toSvgX(nodeIX)}
-            y1={toSvgY(nodeIZ)}
-            x2={toSvgX(nodeJX)}
-            y2={toSvgY(nodeJZ)}
+            x1={toSvgX(el.nodeI.x)}
+            y1={toSvgY(el.nodeI.z)}
+            x2={toSvgX(el.nodeJ.x)}
+            y2={toSvgY(el.nodeJ.z)}
             stroke={col}
-            strokeWidth={sw}
+            strokeWidth={strokeW(el)}
             strokeLinecap="round"
-            opacity={0.85}
+            opacity={el.memberType === "diagonal" ? 0.6 : 0.9}
           />
         );
       })}
 
-      {/* legend */}
+      {/* legend at bottom */}
       {[
         { label: "Leg", color: "#3B82F6" },
         { label: "Horizontal", color: "#22C55E" },
         { label: "Diagonal", color: "#F97316" },
         { label: "Failed", color: "#EF4444" },
       ].map(({ label, color }, i) => (
-        <g key={label} transform={`translate(${PAD + 2}, ${H - PAD + 4 + i * 0})`}>
-          <line
-            x1={PAD + i * 82}
-            y1={H - 20}
-            x2={PAD + i * 82 + 14}
-            y2={H - 20}
-            stroke={color}
-            strokeWidth={2}
-          />
-          <text
-            x={PAD + i * 82 + 18}
-            y={H - 16}
-            fill="#94a3b8"
-            fontSize={9}
-          >
-            {label}
-          </text>
+        <g key={label}>
+          <line x1={PAD_LEFT + i * 76} y1={H - 10} x2={PAD_LEFT + i * 76 + 12} y2={H - 10} stroke={color} strokeWidth={2} />
+          <text x={PAD_LEFT + i * 76 + 15} y={H - 6} fill="#94a3b8" fontSize={8}>{label}</text>
         </g>
       ))}
     </svg>
@@ -183,20 +179,21 @@ function UtilisationChart({
     ...elements.filter((e) => e.memberType === "diagonal"),
   ];
 
-  const barH = 5;
-  const labelW = 60;
-  const chartW = 420;
+  const barH = 4;
+  const labelW = 20;
+  const chartW = 440;
   const maxUtil = Math.max(1.2, ...ordered.map((e) => utilisation(e, allowable)));
-  const svgH = Math.min(400, ordered.length * barH + 60);
+  const contentH = ordered.length * barH + 4;
+  const svgH = contentH + 30; // room for axis label
 
   return (
     <svg
       viewBox={`0 0 500 ${svgH}`}
       className="w-full"
-      style={{ maxHeight: 400 }}
+      style={{ height: Math.min(360, svgH), display: "block" }}
     >
       {/* axis label */}
-      <text x={labelW + chartW / 2} y={svgH - 6} textAnchor="middle" fill="#64748b" fontSize={9}>
+      <text x={labelW + chartW / 2} y={svgH - 8} textAnchor="middle" fill="#64748b" fontSize={9}>
         σ / σ_allow
       </text>
 
@@ -381,9 +378,9 @@ export function LatticeLab() {
         {/* ── Right: visualizations ── */}
         <div className="flex-1 space-y-4 min-w-0">
           {/* Panel 1: Tower elevation */}
-          <div className="panel-card p-4">
+          <div className="panel-card p-4 overflow-hidden">
             <p className="section-title text-sm mb-3">Tower Elevation (Front View)</p>
-            <div className="w-full" style={{ maxHeight: 600 }}>
+            <div className="w-full overflow-hidden" style={{ maxHeight: 500 }}>
               <TowerElevationSVG
                 elements={result.elements}
                 nodes={nodesMapped}
