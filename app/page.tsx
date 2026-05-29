@@ -521,18 +521,28 @@ export default function Page() {
 
       <div className="border-b border-white/8 bg-[#060e1a]/90">
         <div className="mx-auto max-w-[1700px] px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap gap-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {[
               { label: "Tower Height", value: `${config.heightMeters} m` },
               { label: "Wind Speed", value: `${config.windSpeedMph} mph` },
               { label: "Panels", value: `${config.panelCount}` },
-              { label: "Checks", value: `${designCheckSummary.counts.pass}✓ ${designCheckSummary.counts.exceeds > 0 ? designCheckSummary.counts.exceeds + "✗" : ""}` },
             ].map(kpi => (
               <div key={kpi.label} className="flex items-center gap-2">
                 <span className="text-xs text-slate-500 uppercase tracking-widest">{kpi.label}</span>
                 <span className="text-sm font-semibold text-cyan-300">{kpi.value}</span>
               </div>
             ))}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 uppercase tracking-widest">Checks</span>
+              <span className={`text-sm font-semibold ${designCheckSummary.counts.exceeds > 0 ? "text-red-400" : "text-green-400"}`}>
+                {designCheckSummary.counts.pass}✓{designCheckSummary.counts.exceeds > 0 ? ` ${designCheckSummary.counts.exceeds}✗` : ""}
+              </span>
+            </div>
+            {designCheckSummary.counts.exceeds > 0 && (
+              <span className="text-xs text-slate-400 border border-white/10 bg-white/5 rounded-full px-3 py-0.5">
+                Widen base or reduce wind speed to pass all checks
+              </span>
+            )}
           </div>
         </div>
       </div>

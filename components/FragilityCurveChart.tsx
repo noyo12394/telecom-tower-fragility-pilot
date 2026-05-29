@@ -23,29 +23,33 @@ const PAD = { top: 28, right: 32, bottom: 56, left: 64 };
 const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
-const MAX_MPS = 75;
-const MAX_MPH = MAX_MPS / 0.44704;
-
-function xForSpeed(v: number, unitSystem: UnitSystem) {
-  const max = unitSystem === "imperial" ? MAX_MPH : MAX_MPS;
-  return PAD.left + (v / max) * PLOT_W;
-}
-
 function yForProb(p: number) {
   return PAD.top + (1 - p) * PLOT_H;
+}
+
+// Dynamic x-scale: auto-fits so all 4 sigmoid curves are always visible.
+// Shows 0 → 1.6× the Slight DS median (the lowest threshold), minimum 60 m/s.
+function getMaxMps(result: { parameters: Array<{ damageState: DamageState; medianMps: number }> }): number {
+  const slightMedian = result.parameters.find((p) => p.damageState === "Slight")?.medianMps ?? 25;
+  return Math.max(60, slightMedian * 3.2);
+}
+
+function xForSpeed(v: number, maxMps: number, unitSystem: UnitSystem) {
+  const max = unitSystem === "imperial" ? maxMps / 0.44704 : maxMps;
+  const val = unitSystem === "imperial" ? v : v;
+  return PAD.left + (val / max) * PLOT_W;
 }
 
 function buildPath(
   points: FragilityCurvePoint[],
   ds: DamageState,
+  maxMps: number,
   unitSystem: UnitSystem
 ): string {
   return points
     .map((pt, i) => {
-      const x = xForSpeed(
-        unitSystem === "imperial" ? pt.windSpeedMph : pt.windSpeedMps,
-        unitSystem
-      );
+      const v = unitSystem === "imperial" ? pt.windSpeedMph : pt.windSpeedMps;
+      const x = xForSpeed(v, maxMps, unitSystem);
       const y = yForProb(pt.probabilities[ds]);
       return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
     })
@@ -61,16 +65,19 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
 
   const result = useMemo(() => computeFragility(config, checks), [config, checks]);
 
+  const maxMps = useMemo(() => getMaxMps(result), [result]);
+  const maxDisplay = unitSystem === "imperial" ? maxMps / 0.44704 : maxMps;
+
   const designSpeed =
     unitSystem === "imperial"
       ? result.designWindSpeedMph
       : result.designWindSpeedMps;
 
-  const xDesign = xForSpeed(designSpeed, unitSystem);
+  const xDesign = xForSpeed(designSpeed, maxMps, unitSystem);
 
   // Convert hover pixel x to wind speed
   const hoverSpeed = hoverX !== null
-    ? ((hoverX - PAD.left) / PLOT_W) * (unitSystem === "imperial" ? MAX_MPH : MAX_MPS)
+    ? ((hoverX - PAD.left) / PLOT_W) * maxDisplay
     : null;
 
   const hoverProbs = hoverSpeed !== null && hoverSpeed > 0
@@ -100,12 +107,11 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
     }
   }
 
-  // Grid lines
+  // Grid lines — auto-scale x ticks to maxDisplay
   const yTicks = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
-  const xTickValues =
-    unitSystem === "imperial"
-      ? [0, 20, 40, 60, 80, 100, 120, 140, 160]
-      : [0, 10, 20, 30, 40, 50, 60, 70];
+  const xTickStep = maxDisplay > 120 ? 20 : maxDisplay > 80 ? 15 : 10;
+  const xTickValues: number[] = [];
+  for (let v = 0; v <= maxDisplay; v += xTickStep) xTickValues.push(Math.round(v));
 
   return (
     <section className="panel-card p-6 space-y-5">
@@ -125,8 +131,8 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
           onClick={() => setShowReference((v) => !v)}
           className={`rounded-2xl border px-4 py-2 text-sm font-medium transition ${
             showReference
-              ? "border-navy bg-navy text-white"
-              : "border-line bg-white text-navy"
+              ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
+              : "border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
           }`}
         >
           {showReference ? "Hide reference" : "Show reference"}
@@ -141,7 +147,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
               className="inline-block h-3 w-8 rounded-full"
               style={{ backgroundColor: p.color }}
             />
-            <span className="text-sm font-medium text-ink">{p.damageState}</span>
+            <span className="text-sm font-medium text-slate-200">{p.damageState}</span>
           </div>
         ))}
         {showReference && (
@@ -191,15 +197,15 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
           {xTickValues.map((v) => (
             <g key={v}>
               <line
-                x1={xForSpeed(v, unitSystem)}
+                x1={xForSpeed(v, maxMps, unitSystem)}
                 y1={PAD.top}
-                x2={xForSpeed(v, unitSystem)}
+                x2={xForSpeed(v, maxMps, unitSystem)}
                 y2={PAD.top + PLOT_H}
                 stroke="#1e3a5f"
                 strokeWidth="1"
               />
               <text
-                x={xForSpeed(v, unitSystem)}
+                x={xForSpeed(v, maxMps, unitSystem)}
                 y={PAD.top + PLOT_H + 18}
                 textAnchor="middle"
                 fontSize="11"
@@ -236,7 +242,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
           {/* Reference curves (dashed) */}
           {showReference &&
             result.referenceParameters.map((ref) => {
-              const path = buildPath(result.curve, ref.damageState, unitSystem);
+              const path = buildPath(result.curve, ref.damageState, maxMps, unitSystem);
               return (
                 <path
                   key={`ref-${ref.damageState}`}
@@ -254,9 +260,9 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
           {result.parameters.map((p) => (
             <path
               key={p.damageState}
-              d={buildPath(result.curve, p.damageState, unitSystem)}
+              d={buildPath(result.curve, p.damageState, maxMps, unitSystem)}
               stroke={p.color}
-              strokeWidth="2.5"
+              strokeWidth="3"
               fill="none"
               strokeLinecap="round"
             />
@@ -340,7 +346,7 @@ export function FragilityCurveChart({ config, checks, unitSystem }: FragilityCur
           return (
             <div
               key={p.damageState}
-              className="rounded-2xl border border-line bg-white p-4"
+              className="rounded-2xl border border-white/10 bg-white/5 p-4"
               style={{ borderLeftColor: p.color, borderLeftWidth: 3 }}
             >
               <p className="text-xs font-medium uppercase tracking-widest text-steel">

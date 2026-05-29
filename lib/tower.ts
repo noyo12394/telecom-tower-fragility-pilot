@@ -76,7 +76,7 @@ export const DEFAULT_CONFIG: TowerConfig = {
   bracing: "Double K/K-B",
   plan: "Square",
   appurtenances: true,
-  windSpeedMph: 115,
+  windSpeedMph: 90,
   exposure: "C",
   riskCategory: "II"
 };
