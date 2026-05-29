@@ -19,6 +19,7 @@ import { SavedCasesPanel } from "@/components/SavedCasesPanel";
 import { TowerVisualizer } from "@/components/TowerVisualizer";
 import { WindCalculator } from "@/components/WindCalculator";
 import { WindForceChart } from "@/components/WindForceChart";
+import { FragilityCurveChart } from "@/components/FragilityCurveChart";
 import { calculateDesignChecks } from "@/lib/designChecks";
 import { calculateAllPanelLengths } from "@/lib/elementLengths";
 import { calculateMaterialEstimate } from "@/lib/materialQuantity";
@@ -44,6 +45,7 @@ type DashboardTab =
   | "checks"
   | "wind"
   | "material"
+  | "fragility"
   | "sources";
 
 const TAB_OPTIONS: Array<{
@@ -56,7 +58,8 @@ const TAB_OPTIONS: Array<{
   { key: "checks", label: "Design Checks", shortcut: "3" },
   { key: "wind", label: "Wind Loads", shortcut: "4" },
   { key: "material", label: "Material Estimate", shortcut: "5" },
-  { key: "sources", label: "Sources", shortcut: "6" }
+  { key: "fragility", label: "Fragility Curves", shortcut: "6" },
+  { key: "sources", label: "Sources", shortcut: "7" }
 ];
 
 function inferredPanelCountForHeight(heightMeters: HeightOption) {
@@ -202,6 +205,10 @@ export default function Page() {
       }
 
       if (event.key === "6") {
+        setActiveTab("fragility");
+      }
+
+      if (event.key === "7") {
         setActiveTab("sources");
       }
 
@@ -319,6 +326,16 @@ export default function Page() {
             panels={elementPanels}
           />
         </div>
+      );
+    }
+
+    if (activeTab === "fragility") {
+      return (
+        <FragilityCurveChart
+          config={config}
+          checks={designCheckSummary}
+          unitSystem={unitSystem}
+        />
       );
     }
 
@@ -559,7 +576,8 @@ export default function Page() {
                 ["3", "Design Checks tab"],
                 ["4", "Wind Loads tab"],
                 ["5", "Material Estimate tab"],
-                ["6", "Sources tab"],
+                ["6", "Fragility Curves tab"],
+                ["7", "Sources tab"],
                 ["H", "Toggle hover labels"],
                 ["S", "Toggle stress visualization"],
                 ["V or Shift+3", "Toggle 3D/isometric view"],
