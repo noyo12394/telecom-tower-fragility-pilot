@@ -596,23 +596,23 @@ export function TowerVisualizer({
                   return (
                     <g key={`dish-${ratio}`}>
                       <line
-                        x1={left - 8}
+                        x1={left}
                         y1={y}
-                        x2={left - 34}
-                        y2={y - 10}
+                        x2={left - 16}
+                        y2={y}
                         stroke="#475569"
-                        strokeWidth="2"
+                        strokeWidth="2.5"
                       />
                       <line
-                        x1={right + 8}
+                        x1={right}
                         y1={y}
-                        x2={right + 34}
-                        y2={y - 10}
+                        x2={right + 16}
+                        y2={y}
                         stroke="#475569"
-                        strokeWidth="2"
+                        strokeWidth="2.5"
                       />
-                      <circle cx={left - 38} cy={y - 12} r="10" fill="#f59e0b" />
-                      <circle cx={right + 38} cy={y - 12} r="10" fill="#f59e0b" />
+                      <circle cx={left - 20} cy={y} r="7" fill="#f59e0b" stroke="#0d1a2d" strokeWidth="1.5" />
+                      <circle cx={right + 20} cy={y} r="7" fill="#f59e0b" stroke="#0d1a2d" strokeWidth="1.5" />
                     </g>
                   );
                 })}

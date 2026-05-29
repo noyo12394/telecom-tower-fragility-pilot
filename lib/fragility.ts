@@ -46,6 +46,7 @@ function normalCdf(x: number): number {
 
 export function fragilityCdf(windSpeedMps: number, medianMps: number, beta: number): number {
   if (windSpeedMps <= 0) return 0;
+  if (medianMps <= 0 || beta <= 0) return 0;
   const z = Math.log(windSpeedMps / medianMps) / beta;
   return normalCdf(z);
 }
@@ -102,7 +103,7 @@ function deriveCollapseMedian(config: TowerConfig, checks: DesignCheckSummary): 
   // This connects the structural slenderness to collapse capacity
   const worstUtil = Math.max(...checks.panels.map(p => p.worstUtilization), 0.1);
   const slendernessFactor = worstUtil > 0.8
-    ? 1.0 - 0.15 * ((worstUtil - 0.8) / 0.2)  // up to 15% reduction
+    ? Math.max(0.6, 1.0 - 0.15 * Math.min((worstUtil - 0.8) / 0.2, 1)) // up to 15% reduction, floored
     : 1.0 + 0.05 * (0.8 - worstUtil);           // up to 5% bonus for well-proportioned
 
   // Appurtenances increase wind drag → lower effective capacity
