@@ -54,6 +54,12 @@ export interface LabInput {
   Cd: number;
 }
 
+export interface IterLogEntry {
+  iter: number;
+  nFailed: number;
+  nUpgraded: number;
+}
+
 export interface DesignResult {
   nodes: TowerNode[];
   elements: TowerElement[];
@@ -61,6 +67,7 @@ export interface DesignResult {
   converged: boolean;
   totalMassKg: number;
   nFailed: number;
+  iterLog: IterLogEntry[];
 }
 
 export const MEMBER_TABLE: MemberSize[] = [
@@ -288,9 +295,9 @@ function upgradeMembers(elems: TowerElement[]): number {
 
 export function runLatticeDesign(inp: LabInput): DesignResult {
   const maxIter = 25;
-
   const nodes = buildNodes(inp);
   const elements = buildElements(nodes, inp);
+  const iterLog: IterLogEntry[] = [];
 
   let iter = 0;
   let converged = false;
@@ -302,10 +309,12 @@ export function runLatticeDesign(inp: LabInput): DesignResult {
 
     const nFailed = elements.filter((e) => !e.passed).length;
     if (nFailed === 0) {
+      iterLog.push({ iter, nFailed: 0, nUpgraded: 0 });
       converged = true;
       break;
     }
-    upgradeMembers(elements);
+    const nUpgraded = upgradeMembers(elements);
+    iterLog.push({ iter, nFailed, nUpgraded });
   }
 
   const nFailed = elements.filter((e) => !e.passed).length;
@@ -319,5 +328,5 @@ export function runLatticeDesign(inp: LabInput): DesignResult {
     totalMassKg += el.size.weightPerM * L;
   }
 
-  return { nodes, elements, iterations: iter, converged, totalMassKg, nFailed };
+  return { nodes, elements, iterations: iter, converged, totalMassKg, nFailed, iterLog };
 }
