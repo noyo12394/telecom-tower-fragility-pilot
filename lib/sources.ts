@@ -399,31 +399,22 @@ export function buildTraceabilityRows(
       parameter: "Bracing pattern",
       value: config.bracing,
       tier:
-        config.bracing === "Mixed K/X" || config.bracing === "Double K/K-B"
+        config.bracing === "Double K/K-B"
           ? "Literature-Backed"
           : "Derived/Assumed",
       sourceLabel:
-        config.bracing === "Mixed K/X"
-          ? "Khazaali Dissertation §4.5"
-          : config.bracing === "Double K/K-B"
-            ? "60 m Bracing Study"
-            : "Exploratory pattern",
+        config.bracing === "Double K/K-B"
+          ? "60 m Bracing Study"
+          : "Exploratory pattern",
       clausePage:
-        config.bracing === "Mixed K/X"
-          ? "K lower panels, X upper panels"
-          : config.bracing === "Double K/K-B"
-            ? "Lowest utilization reported"
-            : "Exploratory selection",
+        config.bracing === "Double K/K-B"
+          ? "Lowest utilization reported"
+          : "Exploratory selection",
       justification:
-        config.bracing === "Mixed K/X"
-          ? "Matches the advisor-group pilot bracing layout for telecom towers."
-          : config.bracing === "Double K/K-B"
-            ? "Selected because the 60 m study reported the lowest overall utilization for this pattern."
-            : "Included for comparison but not assigned as the default literature-backed pilot arrangement.",
-      link:
-        config.bracing === "Mixed K/X"
-          ? sourceUrl("khazaali-dissertation")
-          : sourceUrl("bracing-study"),
+        config.bracing === "Double K/K-B"
+          ? "Selected because the 60 m study reported the lowest overall utilization for this pattern."
+          : "Included for comparison but not assigned as the default literature-backed pilot arrangement.",
+      link: sourceUrl("bracing-study"),
       userEdited: config.bracing !== defaultConfig.bracing
     },
     {

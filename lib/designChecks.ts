@@ -13,7 +13,6 @@ export interface DesignCheckItem {
   panelNumber: number;
   elementType:
     | "Leg"
-    | "X-Brace"
     | "K-Brace"
     | "Sub-Horizontal"
     | "Horizontal Chord"
@@ -47,6 +46,7 @@ export interface DesignCheckSummary {
   warnings: ValidationMessage[];
   worstKlr: number;
   worstPanelNumber: number | null;
+  checkBasis: string;
 }
 
 function severityRank(severity: CheckSeverity) {
@@ -74,11 +74,13 @@ function pushCheckItem(
 export function calculateDesignChecks({
   config,
   panels,
-  memberProfiles
+  memberProfiles,
+  endCondition = "pin-pin"
 }: {
   config: TowerConfig;
   panels: PanelElementLengths[];
   memberProfiles: PanelMemberProfile[];
+  endCondition?: "pin-pin" | "fixed-free";
 }): DesignCheckSummary {
   const items: DesignCheckItem[] = [];
   const warnings: ValidationMessage[] = [];
@@ -100,23 +102,10 @@ export function calculateDesignChecks({
       result: checkSlenderness({
         lengthMeters: panel.legLength,
         sectionLabel: member.legPropertySection,
-        role: "leg"
+        role: "leg",
+        endCondition
       })
     });
-
-    if (panel.xBraceDiag) {
-      pushCheckItem(items, {
-        panelNumber: panel.panelIndex,
-        elementType: "X-Brace",
-        section: member.diagonalSection,
-        lengthMeters: panel.xBraceDiag,
-        result: checkSlenderness({
-          lengthMeters: panel.xBraceDiag,
-          sectionLabel: member.diagonalPropertySection,
-          role: "bracing"
-        })
-      });
-    }
 
     if (panel.kBraceDiag) {
       pushCheckItem(items, {
@@ -302,6 +291,9 @@ export function calculateDesignChecks({
 
   const worstKlr = Math.max(...items.map((item) => item.result.klr), 0);
 
+  const checkBasis =
+    "Leg members: KL/r check + Euler σ_cr screen applied. K-brace diagonals: Admissible stress check only. Horizontals: Admissible stress check only. Basis: ASCE 10-15 §3.4 (slenderness), §3.6 (compression). Simplified screening only — not stamped code design.";
+
   return {
     items,
     counts,
@@ -311,7 +303,8 @@ export function calculateDesignChecks({
       (left, right) => severityRank(right.severity) - severityRank(left.severity)
     ),
     worstKlr,
-    worstPanelNumber: mostCriticalPanel?.panelNumber ?? null
+    worstPanelNumber: mostCriticalPanel?.panelNumber ?? null,
+    checkBasis
   };
 }
 

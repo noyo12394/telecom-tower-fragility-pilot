@@ -31,19 +31,12 @@ function MiniBracingDiagram({
       <line x1="96" y1="84" x2="96" y2="16" stroke="#11233c" strokeWidth="4" />
       <line x1="24" y1="84" x2="96" y2="84" stroke="#cbd5e1" strokeWidth="2" />
       <line x1="24" y1="16" x2="96" y2="16" stroke="#cbd5e1" strokeWidth="2" />
-      {bracingType === "X" ? (
-        <>
-          <line x1="24" y1="84" x2="96" y2="16" stroke="#64748b" strokeWidth="3" />
-          <line x1="96" y1="84" x2="24" y2="16" stroke="#64748b" strokeWidth="3" />
-        </>
-      ) : (
-        <>
-          <line x1="24" y1="84" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
-          <line x1="24" y1="16" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
-          <line x1="96" y1="84" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
-          <line x1="96" y1="16" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
-        </>
-      )}
+      <>
+        <line x1="24" y1="84" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
+        <line x1="24" y1="16" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
+        <line x1="96" y1="84" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
+        <line x1="96" y1="16" x2="60" y2="50" stroke="#64748b" strokeWidth="3" />
+      </>
     </svg>
   );
 }
@@ -64,7 +57,7 @@ export function ElementDetailDrawer({
     sectionLabel: memberProfile.legPropertySection,
     role: "leg"
   });
-  const diagonalLength = panel.xBraceDiag ?? panel.kBraceDiag;
+  const diagonalLength = panel.kBraceDiag;
   const diagonalCheck = diagonalLength
     ? checkSlenderness({
         lengthMeters: diagonalLength,
@@ -132,7 +125,7 @@ export function ElementDetailDrawer({
             <div className="rounded-3xl border border-line bg-slate-50 p-5">
               <p className="micro-label">Bracing mini-diagram</p>
               <h3 className="mt-2 text-sm font-semibold text-navy">
-                {panel.bracingType === "X" ? "X panel" : "K panel"}
+                K panel
               </h3>
               <div className="mt-4">
                 <MiniBracingDiagram bracingType={panel.bracingType} />

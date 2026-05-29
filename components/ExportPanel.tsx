@@ -193,6 +193,34 @@ export function ExportPanel({
         >
           Download physics reference HTML
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            const pythonInput = {
+              height_m: config.heightMeters,
+              base_width_m: config.bottomWidthMeters,
+              top_width_m: config.topWidthMeters,
+              wind_speed_mph: config.windSpeedMph,
+              bracing: config.bracing,
+              panel_count: config.panelCount,
+              exposure: config.exposure,
+              risk_category: config.riskCategory,
+              end_condition: "pin-pin"
+            };
+            downloadTextFile(
+              "tower_input.json",
+              JSON.stringify(pythonInput, null, 2),
+              "application/json;charset=utf-8"
+            );
+          }}
+          className="rounded-2xl border border-line bg-slate-50 px-4 py-4 text-left text-sm font-medium text-navy transition hover:border-accent/40 hover:bg-white"
+        >
+          Export as Python input JSON
+          <span className="mt-1 block text-xs font-normal text-steel">
+            Python workflow: scripts/generate_tower_design.py
+          </span>
+        </button>
       </div>
 
       <p className="mt-4 text-sm leading-6 text-steel">

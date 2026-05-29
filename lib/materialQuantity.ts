@@ -86,7 +86,6 @@ export function calculateMaterialEstimate(
   const sectionMap = new Map<string, SectionQuantityRow>();
 
   let legs = 0;
-  let xBraces = 0;
   let kBraces = 0;
   let subHorizontals = 0;
   let horizontals = 0;
@@ -112,16 +111,6 @@ export function calculateMaterialEstimate(
       member.horizontalPropertySection,
       horizontalContribution
     );
-
-    if (panel.xBraceDiag) {
-      const diagonalContribution = panel.xBraceDiag * 8;
-      xBraces += diagonalContribution;
-      addSectionContribution(
-        sectionMap,
-        member.diagonalPropertySection,
-        diagonalContribution
-      );
-    }
 
     if (panel.kBraceDiag) {
       const diagonalContribution = panel.kBraceDiag * 8;
@@ -165,22 +154,6 @@ export function calculateMaterialEstimate(
         )
         .reduce((sum, row) => sum + row.totalMassKg, 0),
       color: "#0f766e"
-    },
-    {
-      key: "x-braces",
-      label: "X-braces",
-      lengthMeters: xBraces,
-      massKg: xBraces
-        ? xBraces *
-          unitWeightForSection(
-            memberProfiles.find((profile) =>
-              panels.some(
-                (panel) => panel.panelIndex === profile.panelNumber && panel.xBraceDiag
-              )
-            )?.diagonalPropertySection ?? "L70×70×6"
-          ).weight
-        : 0,
-      color: "#2563eb"
     },
     {
       key: "k-braces",

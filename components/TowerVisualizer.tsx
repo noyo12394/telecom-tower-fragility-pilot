@@ -39,6 +39,20 @@ interface LineElement {
   tooltip: TooltipCardData;
 }
 
+function stressColor(util: number): string {
+  if (util < 0.6) return "#22c55e";
+  if (util > 0.9) return "#ef4444";
+  const t = (util - 0.6) / 0.3;
+  const r = Math.round(34 + (239 - 34) * t);
+  const g = Math.round(197 + (68 - 197) * t);
+  const b = Math.round(94 + (68 - 94) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+function stressWidth(util: number): number {
+  return 1.5 + Math.min(util, 1) * 2.0;
+}
+
 function yForElevation(elevation: number, towerHeight: number) {
   const topMargin = 68;
   const drawHeight = 600;
@@ -105,6 +119,20 @@ function elementTooltipData({
     footer:
       "KL/r is a preliminary check using approximate radius of gyration values from the AISC manual + Bilionis-based member mapping."
   };
+}
+
+function utilisationColor(util: number): string {
+  if (util < 0.6) return "#22c55e";
+  if (util > 0.9) return "#ef4444";
+  const t = (util - 0.6) / 0.3;
+  const r = Math.round(34 + (239 - 34) * t);
+  const g = Math.round(197 + (68 - 197) * t);
+  const b = Math.round(94 + (68 - 94) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+function utilisationWidth(util: number): number {
+  return 1.5 + Math.min(Math.max(util, 0), 1) * 2.0;
 }
 
 function planViewThumbnail(plan: TowerConfig["plan"]) {
@@ -256,49 +284,6 @@ export function TowerVisualizer({
           })
         }
       ];
-
-      if (panel.bracingType === "X" && panel.xBraceDiag) {
-        baseElements.push(
-          {
-            id: `x1-${panel.panelIndex}`,
-            x1: leftBottom,
-            y1: yBottom,
-            x2: rightTop,
-            y2: yTop,
-            strokeWidth: 3,
-            color: "#64748b",
-            tooltip: elementTooltipData({
-              elementType: `X-brace diagonal | Panel ${panel.panelIndex}`,
-              lengthMeters: panel.xBraceDiag,
-              section: member.diagonalSection,
-              steel: member.bracingSteel,
-              fyMpa: member.bracingFyMpa,
-              role: "bracing",
-              sourceCitation: "Elementary geometry + Bilionis 2019",
-              unitSystem
-            })
-          },
-          {
-            id: `x2-${panel.panelIndex}`,
-            x1: rightBottom,
-            y1: yBottom,
-            x2: leftTop,
-            y2: yTop,
-            strokeWidth: 3,
-            color: "#64748b",
-            tooltip: elementTooltipData({
-              elementType: `X-brace diagonal | Panel ${panel.panelIndex}`,
-              lengthMeters: panel.xBraceDiag,
-              section: member.diagonalSection,
-              steel: member.bracingSteel,
-              fyMpa: member.bracingFyMpa,
-              role: "bracing",
-              sourceCitation: "Elementary geometry + Bilionis 2019",
-              unitSystem
-            })
-          }
-        );
-      }
 
       if (panel.bracingType === "K" && panel.kBraceDiag && panel.subHorizontal) {
         const kTargetY = config.bracing === "K-Down" ? midY + 16 : yTop;
@@ -523,9 +508,10 @@ export function TowerVisualizer({
                 config.bottomWidthMeters,
                 "right"
               );
-              const stressColor =
-                windForces.find((row) => row.panelNumber === panel.panelIndex)?.color ??
-                "rgba(219, 234, 254, 0.35)";
+              const windPanel = windForces.find((row) => row.panelNumber === panel.panelIndex);
+              const stressColor = windPanel
+                ? utilisationColor(windPanel.demandIndex)
+                : "rgba(219, 234, 254, 0.35)";
 
               return (
                 <g

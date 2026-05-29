@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { type DesignCheckSummary } from "@/lib/designChecks";
 import { formatLengthShort, type UnitSystem } from "@/lib/tower";
 
 interface DesignChecksProps {
   summary: DesignCheckSummary;
   unitSystem: UnitSystem;
+  onEndConditionChange?: (endCondition: "pin-pin" | "fixed-free") => void;
 }
 
 function severityClasses(severity: "info" | "caution" | "warning") {
@@ -32,7 +34,14 @@ function statusClasses(status: "pass" | "close" | "exceeds") {
   return "bg-red-500/10 text-red-700 border-red-500/30";
 }
 
-export function DesignChecks({ summary, unitSystem }: DesignChecksProps) {
+export function DesignChecks({ summary, unitSystem, onEndConditionChange }: DesignChecksProps) {
+  const [endCondition, setEndCondition] = useState<"pin-pin" | "fixed-free">("pin-pin");
+
+  function handleEndConditionChange(ec: "pin-pin" | "fixed-free") {
+    setEndCondition(ec);
+    onEndConditionChange?.(ec);
+  }
+
   const totalChecks =
     summary.counts.pass + summary.counts.close + summary.counts.exceeds;
   const worstItem = summary.worstItems[0];
@@ -90,6 +99,46 @@ export function DesignChecks({ summary, unitSystem }: DesignChecksProps) {
             </div>
           ))}
         </div>
+
+        <div className="mt-4 flex items-center gap-3">
+          <span className="text-sm font-medium text-navy">End condition:</span>
+          <button
+            type="button"
+            onClick={() => handleEndConditionChange("pin-pin")}
+            className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
+              endCondition === "pin-pin"
+                ? "border-navy bg-navy text-white"
+                : "border-line bg-white text-navy hover:bg-slate-50"
+            }`}
+          >
+            Pin-pin (K=1)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleEndConditionChange("fixed-free")}
+            className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
+              endCondition === "fixed-free"
+                ? "border-navy bg-navy text-white"
+                : "border-line bg-white text-navy hover:bg-slate-50"
+            }`}
+          >
+            Fixed-free (K=2, conservative)
+          </button>
+        </div>
+      </div>
+
+      <div className="panel-card p-6">
+        <div className="mb-3">
+          <p className="micro-label">Check basis</p>
+          <h3 className="section-title">Scope of design checks applied</h3>
+        </div>
+        <ul className="space-y-1 text-sm leading-6 text-steel">
+          <li>Leg members: KL/r check + Euler σ_cr screen applied</li>
+          <li>K-brace diagonals: Admissible stress check only (K topology prevents buckling)</li>
+          <li>Horizontals: Admissible stress check only</li>
+          <li>Basis: ASCE 10-15 §3.4 (slenderness), §3.6 (compression)</li>
+          <li className="font-medium text-navy">Simplified screening only — not stamped code design</li>
+        </ul>
       </div>
 
       <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
@@ -203,6 +252,7 @@ export function DesignChecks({ summary, unitSystem }: DesignChecksProps) {
               <th className="border-b border-line px-3 py-3">Length</th>
               <th className="border-b border-line px-3 py-3">KL/r</th>
               <th className="border-b border-line px-3 py-3">Limit</th>
+              <th className="border-b border-line px-3 py-3">σ_cr (MPa)</th>
               <th className="border-b border-line px-3 py-3">Status</th>
             </tr>
           </thead>
@@ -226,6 +276,11 @@ export function DesignChecks({ summary, unitSystem }: DesignChecksProps) {
                 </td>
                 <td className="border-b border-line/70 px-3 py-3">
                   {item.result.limit}
+                </td>
+                <td className="border-b border-line/70 px-3 py-3">
+                  {isFinite(item.result.sigmaCreMpa)
+                    ? item.result.sigmaCreMpa.toFixed(0) + " MPa"
+                    : "∞"}
                 </td>
                 <td className="border-b border-line/70 px-3 py-3">
                   <span

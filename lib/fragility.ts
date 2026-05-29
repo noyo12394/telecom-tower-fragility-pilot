@@ -58,8 +58,6 @@ const BASELINE_HEIGHT_M = 48;
 // Bracing efficiency relative modifiers (from Khazaali dissertation §4.5)
 const BRACING_FACTOR: Record<string, number> = {
   "Double K/K-B": 1.10,  // most efficient in the bracing study
-  "Mixed K/X": 1.00,     // reference
-  "X": 0.96,
   "K-Down": 0.90
 };
 

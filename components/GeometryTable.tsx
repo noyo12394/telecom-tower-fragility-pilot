@@ -7,13 +7,10 @@ interface GeometryTableProps {
 }
 
 function panelBracingBadge(config: TowerConfig) {
-  if (config.bracing === "Mixed K/X" || config.bracing === "Double K/K-B") {
+  if (config.bracing === "Double K/K-B") {
     return {
       tier: "Literature-Backed" as const,
-      label:
-        config.bracing === "Mixed K/X"
-          ? "Advisor group default"
-          : "Efficient bracing study"
+      label: "Efficient bracing study"
     };
   }
 

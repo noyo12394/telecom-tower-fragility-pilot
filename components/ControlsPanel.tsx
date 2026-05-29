@@ -49,19 +49,9 @@ const BRACING_OPTIONS: Array<{
     note: "Most efficient in 60 m study"
   },
   {
-    value: "X",
-    tier: "Literature-Backed",
-    note: "Appendix B examples / comparison option"
-  },
-  {
     value: "K-Down",
     tier: "Literature-Backed",
     note: "Compared in 60 m bracing study"
-  },
-  {
-    value: "Mixed K/X",
-    tier: "Literature-Backed",
-    note: "Advisor research group pattern"
   }
 ];
 

@@ -20,6 +20,7 @@ import { TowerVisualizer } from "@/components/TowerVisualizer";
 import { WindCalculator } from "@/components/WindCalculator";
 import { WindForceChart } from "@/components/WindForceChart";
 import { FragilityCurveChart } from "@/components/FragilityCurveChart";
+import { DesignWorkflow } from "@/components/DesignWorkflow";
 import { calculateDesignChecks } from "@/lib/designChecks";
 import { calculateAllPanelLengths } from "@/lib/elementLengths";
 import { calculateMaterialEstimate } from "@/lib/materialQuantity";
@@ -40,6 +41,7 @@ import {
 import { calculatePanelWindForces } from "@/lib/windForce";
 
 type DashboardTab =
+  | "workflow"
   | "geometry"
   | "lengths"
   | "checks"
@@ -53,13 +55,14 @@ const TAB_OPTIONS: Array<{
   label: string;
   shortcut: string;
 }> = [
-  { key: "geometry", label: "Tower Geometry", shortcut: "1" },
-  { key: "lengths", label: "Element Lengths", shortcut: "2" },
-  { key: "checks", label: "Design Checks", shortcut: "3" },
-  { key: "wind", label: "Wind Loads", shortcut: "4" },
-  { key: "material", label: "Material Estimate", shortcut: "5" },
-  { key: "fragility", label: "Fragility Curves", shortcut: "6" },
-  { key: "sources", label: "Sources", shortcut: "7" }
+  { key: "workflow", label: "Design Workflow", shortcut: "1" },
+  { key: "geometry", label: "Tower Geometry", shortcut: "2" },
+  { key: "lengths", label: "Element Lengths", shortcut: "3" },
+  { key: "checks", label: "Design Checks", shortcut: "4" },
+  { key: "wind", label: "Wind Loads", shortcut: "5" },
+  { key: "material", label: "Material Estimate", shortcut: "6" },
+  { key: "fragility", label: "Fragility Curves", shortcut: "7" },
+  { key: "sources", label: "Sources", shortcut: "8" }
 ];
 
 function inferredPanelCountForHeight(heightMeters: HeightOption) {
@@ -132,6 +135,7 @@ export default function Page() {
   const [show3D, setShow3D] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedPanel, setSelectedPanel] = useState<number | null>(null);
+  const [endCondition, setEndCondition] = useState<"pin-pin" | "fixed-free">("pin-pin");
 
   const geometryPanels = generateTowerPanels(config);
   const elementPanels = calculateAllPanelLengths(
@@ -148,7 +152,8 @@ export default function Page() {
   const designCheckSummary = calculateDesignChecks({
     config,
     panels: elementPanels,
-    memberProfiles
+    memberProfiles,
+    endCondition
   });
 
   const selectedPanelData =
@@ -185,30 +190,34 @@ export default function Page() {
       }
 
       if (event.key === "1") {
-        setActiveTab("geometry");
+        setActiveTab("workflow");
       }
 
       if (event.key === "2") {
-        setActiveTab("lengths");
+        setActiveTab("geometry");
       }
 
       if (event.key === "3") {
-        setActiveTab("checks");
+        setActiveTab("lengths");
       }
 
       if (event.key === "4") {
-        setActiveTab("wind");
+        setActiveTab("checks");
       }
 
       if (event.key === "5") {
-        setActiveTab("material");
+        setActiveTab("wind");
       }
 
       if (event.key === "6") {
-        setActiveTab("fragility");
+        setActiveTab("material");
       }
 
       if (event.key === "7") {
+        setActiveTab("fragility");
+      }
+
+      if (event.key === "8") {
         setActiveTab("sources");
       }
 
@@ -267,6 +276,18 @@ export default function Page() {
             }}
           />
         </div>
+      );
+    }
+
+    if (activeTab === "workflow") {
+      return (
+        <DesignWorkflow
+          config={config}
+          panels={elementPanels}
+          memberProfiles={memberProfiles}
+          checks={designCheckSummary}
+          unitSystem={unitSystem}
+        />
       );
     }
 
@@ -342,7 +363,11 @@ export default function Page() {
     if (activeTab === "checks") {
       return (
         <div className="space-y-6">
-          <DesignChecks summary={designCheckSummary} unitSystem={unitSystem} />
+          <DesignChecks
+            summary={designCheckSummary}
+            unitSystem={unitSystem}
+            onEndConditionChange={setEndCondition}
+          />
           <SavedCasesPanel
             config={config}
             compareMode={compareMode}
@@ -375,6 +400,7 @@ export default function Page() {
     config,
     designCheckSummary,
     elementPanels,
+    endCondition,
     geometryPanels,
     materialEstimate,
     memberProfiles,
@@ -571,13 +597,14 @@ export default function Page() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                ["1", "Tower Geometry tab"],
-                ["2", "Element Lengths tab"],
-                ["3", "Design Checks tab"],
-                ["4", "Wind Loads tab"],
-                ["5", "Material Estimate tab"],
-                ["6", "Fragility Curves tab"],
-                ["7", "Sources tab"],
+                ["1", "Design Workflow tab"],
+                ["2", "Tower Geometry tab"],
+                ["3", "Element Lengths tab"],
+                ["4", "Design Checks tab"],
+                ["5", "Wind Loads tab"],
+                ["6", "Material Estimate tab"],
+                ["7", "Fragility Curves tab"],
+                ["8", "Sources tab"],
                 ["H", "Toggle hover labels"],
                 ["S", "Toggle stress visualization"],
                 ["V or Shift+3", "Toggle 3D/isometric view"],
