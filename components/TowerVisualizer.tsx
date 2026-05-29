@@ -571,15 +571,16 @@ export function TowerVisualizer({
                 {[0.8, 0.9, 0.97].map((ratio) => {
                   const elevation = ratio * config.heightMeters;
                   const y = yForElevation(elevation, config.heightMeters);
-                  const width = xForWidth(midWidth, config.bottomWidthMeters, "right");
-                  const left = xForWidth(midWidth, config.bottomWidthMeters, "left");
+                  const wAtElev = config.bottomWidthMeters * (1 - ratio) + config.topWidthMeters * ratio;
+                  const right = xForWidth(wAtElev, config.bottomWidthMeters, "right");
+                  const left = xForWidth(wAtElev, config.bottomWidthMeters, "left");
 
                   return (
                     <line
                       key={`platform-${ratio}`}
-                      x1={left - 24}
+                      x1={left}
                       y1={y}
-                      x2={width + 24}
+                      x2={right}
                       y2={y}
                       stroke="#0f766e"
                       strokeWidth="4"
@@ -590,29 +591,16 @@ export function TowerVisualizer({
                 {[0.83, 0.93].map((ratio) => {
                   const elevation = ratio * config.heightMeters;
                   const y = yForElevation(elevation, config.heightMeters);
-                  const right = xForWidth(midWidth, config.bottomWidthMeters, "right");
-                  const left = xForWidth(midWidth, config.bottomWidthMeters, "left");
+                  const wAtElev = config.bottomWidthMeters * (1 - ratio) + config.topWidthMeters * ratio;
+                  const right = xForWidth(wAtElev, config.bottomWidthMeters, "right");
+                  const left = xForWidth(wAtElev, config.bottomWidthMeters, "left");
 
                   return (
                     <g key={`dish-${ratio}`}>
-                      <line
-                        x1={left}
-                        y1={y}
-                        x2={left - 16}
-                        y2={y}
-                        stroke="#475569"
-                        strokeWidth="2.5"
-                      />
-                      <line
-                        x1={right}
-                        y1={y}
-                        x2={right + 16}
-                        y2={y}
-                        stroke="#475569"
-                        strokeWidth="2.5"
-                      />
-                      <circle cx={left - 20} cy={y} r="7" fill="#f59e0b" stroke="#0d1a2d" strokeWidth="1.5" />
-                      <circle cx={right + 20} cy={y} r="7" fill="#f59e0b" stroke="#0d1a2d" strokeWidth="1.5" />
+                      <line x1={left} y1={y} x2={left - 14} y2={y} stroke="#475569" strokeWidth="2.5" />
+                      <line x1={right} y1={y} x2={right + 14} y2={y} stroke="#475569" strokeWidth="2.5" />
+                      <circle cx={left - 18} cy={y} r="6" fill="#f59e0b" stroke="#0d1a2d" strokeWidth="1.5" />
+                      <circle cx={right + 18} cy={y} r="6" fill="#f59e0b" stroke="#0d1a2d" strokeWidth="1.5" />
                     </g>
                   );
                 })}
