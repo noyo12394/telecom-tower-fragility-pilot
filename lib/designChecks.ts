@@ -1,10 +1,15 @@
 import { type PanelElementLengths } from "@/lib/elementLengths";
 import {
   checkSlenderness,
+  type EndCondition,
   type SlendernessResult,
   type SlendernessStatus
 } from "@/lib/slenderness";
-import { type PanelMemberProfile, type TowerConfig } from "@/lib/tower";
+import {
+  angleSectionForLabel,
+  type PanelMemberProfile,
+  type TowerConfig
+} from "@/lib/tower";
 
 export type CheckSeverity = "info" | "caution" | "warning";
 
@@ -13,7 +18,6 @@ export interface DesignCheckItem {
   panelNumber: number;
   elementType:
     | "Leg"
-    | "X-Brace"
     | "K-Brace"
     | "Sub-Horizontal"
     | "Horizontal Chord"
@@ -47,6 +51,7 @@ export interface DesignCheckSummary {
   warnings: ValidationMessage[];
   worstKlr: number;
   worstPanelNumber: number | null;
+  endCondition: EndCondition;
 }
 
 function severityRank(severity: CheckSeverity) {
@@ -71,14 +76,128 @@ function pushCheckItem(
   });
 }
 
-export function calculateDesignChecks({
+function panelWindForceN(config: TowerConfig, panel: PanelElementLengths) {
+  const velocityMps = config.windSpeedMph * 0.44704;
+  const velocityPressurePa = 0.613 * velocityMps ** 2;
+  const projectedAreaM2 =
+    panel.averageWidth * panel.panelHeight * panel.solidityRatio;
+
+  return velocityPressurePa * panel.dragCoefficient * projectedAreaM2;
+}
+
+function panelWeightN(
+  panel: PanelElementLengths,
+  memberProfiles: PanelMemberProfile[]
+) {
+  const member = memberProfiles.find(
+    (profile) => profile.panelNumber === panel.panelIndex
+  );
+
+  if (!member) {
+    return 0;
+  }
+
+  const legMass = angleSectionForLabel(member.legPropertySection).mass_kg_m;
+  const diagonalMass = angleSectionForLabel(
+    member.diagonalPropertySection
+  ).mass_kg_m;
+  const horizontalMass = angleSectionForLabel(
+    member.horizontalPropertySection
+  ).mass_kg_m;
+
+  const totalMassKg =
+    panel.legLength * 4 * legMass +
+    (panel.kBraceDiag ?? 0) * 8 * diagonalMass +
+    (panel.subHorizontal ?? 0) * 4 * horizontalMass +
+    panel.horizontal * 4 * horizontalMass +
+    (panel.hipBraceDiag ?? 0) * 2 * diagonalMass;
+
+  return totalMassKg * 9.80665;
+}
+
+function sectionAreaMm2(sectionLabel: string) {
+  return angleSectionForLabel(sectionLabel).A_mm2;
+}
+
+function estimateLegDemandMpa({
   config,
+  panel,
   panels,
   memberProfiles
 }: {
   config: TowerConfig;
+  panel: PanelElementLengths;
   panels: PanelElementLengths[];
   memberProfiles: PanelMemberProfile[];
+}) {
+  const panelIndex = panels.findIndex(
+    (candidate) => candidate.panelIndex === panel.panelIndex
+  );
+  const panelsAbove = panels.slice(Math.max(panelIndex, 0));
+  const cumulativeWeightN = panelsAbove.reduce(
+    (sum, candidate) => sum + panelWeightN(candidate, memberProfiles),
+    0
+  );
+  const overturningMomentNm = panelsAbove.reduce((sum, candidate) => {
+    const midpointElevation =
+      (candidate.elevBottom + candidate.elevTop) / 2;
+
+    return sum + panelWindForceN(config, candidate) * midpointElevation;
+  }, 0);
+  const gravityDemandN = cumulativeWeightN / 4;
+  const windCoupleDemandN =
+    overturningMomentNm / (2 * Math.max(panel.averageWidth, 0.25));
+  const member = memberProfiles.find(
+    (profile) => profile.panelNumber === panel.panelIndex
+  );
+
+  if (!member) {
+    return 0;
+  }
+
+  return (gravityDemandN + windCoupleDemandN) / sectionAreaMm2(member.legPropertySection);
+}
+
+function estimateMemberDemandMpa({
+  config,
+  panel,
+  sectionLabel,
+  loadShare
+}: {
+  config: TowerConfig;
+  panel: PanelElementLengths;
+  sectionLabel: string;
+  loadShare: number;
+}) {
+  const forceN = panelWindForceN(config, panel) / loadShare;
+
+  return forceN / sectionAreaMm2(sectionLabel);
+}
+
+function resultUtilization(result: SlendernessResult) {
+  const stressUtilization =
+    result.sigmaAdmissibleMpa > 0
+      ? result.sigmaDemandMpa / result.sigmaAdmissibleMpa
+      : 0;
+  const eulerUtilization =
+    result.role === "leg" && Number.isFinite(result.sigmaCreMpa)
+      ? result.sigmaDemandMpa / result.sigmaCreMpa
+      : 0;
+  const klrUtilization = result.role === "leg" ? result.klr / result.limit : 0;
+
+  return Math.max(stressUtilization, eulerUtilization, klrUtilization);
+}
+
+export function calculateDesignChecks({
+  config,
+  panels,
+  memberProfiles,
+  endCondition = "pin-pin"
+}: {
+  config: TowerConfig;
+  panels: PanelElementLengths[];
+  memberProfiles: PanelMemberProfile[];
+  endCondition?: EndCondition;
 }): DesignCheckSummary {
   const items: DesignCheckItem[] = [];
   const warnings: ValidationMessage[] = [];
@@ -100,23 +219,17 @@ export function calculateDesignChecks({
       result: checkSlenderness({
         lengthMeters: panel.legLength,
         sectionLabel: member.legPropertySection,
-        role: "leg"
+        role: "leg",
+        endCondition,
+        fyMpa: member.legFyMpa,
+        sigmaDemandMpa: estimateLegDemandMpa({
+          config,
+          panel,
+          panels,
+          memberProfiles
+        })
       })
     });
-
-    if (panel.xBraceDiag) {
-      pushCheckItem(items, {
-        panelNumber: panel.panelIndex,
-        elementType: "X-Brace",
-        section: member.diagonalSection,
-        lengthMeters: panel.xBraceDiag,
-        result: checkSlenderness({
-          lengthMeters: panel.xBraceDiag,
-          sectionLabel: member.diagonalPropertySection,
-          role: "bracing"
-        })
-      });
-    }
 
     if (panel.kBraceDiag) {
       pushCheckItem(items, {
@@ -127,7 +240,15 @@ export function calculateDesignChecks({
         result: checkSlenderness({
           lengthMeters: panel.kBraceDiag,
           sectionLabel: member.diagonalPropertySection,
-          role: "bracing"
+          role: "bracing",
+          endCondition,
+          fyMpa: member.bracingFyMpa,
+          sigmaDemandMpa: estimateMemberDemandMpa({
+            config,
+            panel,
+            sectionLabel: member.diagonalPropertySection,
+            loadShare: 8
+          })
         })
       });
     }
@@ -141,7 +262,15 @@ export function calculateDesignChecks({
         result: checkSlenderness({
           lengthMeters: panel.subHorizontal,
           sectionLabel: member.horizontalPropertySection,
-          role: "redundant"
+          role: "redundant",
+          endCondition,
+          fyMpa: member.bracingFyMpa,
+          sigmaDemandMpa: estimateMemberDemandMpa({
+            config,
+            panel,
+            sectionLabel: member.horizontalPropertySection,
+            loadShare: 4
+          })
         })
       });
     }
@@ -154,7 +283,15 @@ export function calculateDesignChecks({
       result: checkSlenderness({
         lengthMeters: panel.horizontal,
         sectionLabel: member.horizontalPropertySection,
-        role: "redundant"
+        role: "redundant",
+        endCondition,
+        fyMpa: member.bracingFyMpa,
+        sigmaDemandMpa: estimateMemberDemandMpa({
+          config,
+          panel,
+          sectionLabel: member.horizontalPropertySection,
+          loadShare: 4
+        })
       })
     });
 
@@ -167,7 +304,15 @@ export function calculateDesignChecks({
         result: checkSlenderness({
           lengthMeters: panel.hipBraceDiag,
           sectionLabel: member.diagonalPropertySection,
-          role: "redundant"
+          role: "redundant",
+          endCondition,
+          fyMpa: member.bracingFyMpa,
+          sigmaDemandMpa: estimateMemberDemandMpa({
+            config,
+            panel,
+            sectionLabel: member.diagonalPropertySection,
+            loadShare: 2
+          })
         })
       });
     }
@@ -182,7 +327,7 @@ export function calculateDesignChecks({
   const panelsSummary = panels.map((panel) => {
     const panelItems = items.filter((item) => item.panelNumber === panel.panelIndex);
     const worstUtilization = Math.max(
-      ...panelItems.map((item) => item.result.klr / item.result.limit),
+      ...panelItems.map((item) => resultUtilization(item.result)),
       0
     );
 
@@ -245,7 +390,7 @@ export function calculateDesignChecks({
       severity: "info",
       title: "K-Down is being used as a comparison option",
       detail:
-        "The 60 m bracing study reported higher stress concentration for K-Down than Double K/K-B. Keep it as an exploratory option rather than a preferred default.",
+        "The 60 m bracing study reported higher stress concentration for K-Down than Double K/K-B. Keep it as an exploratory K-bracing option rather than a preferred default.",
       source: "60 m Bracing Study"
     });
   }
@@ -265,27 +410,24 @@ export function calculateDesignChecks({
     warnings.push({
       id: "slenderness-exceed",
       severity: "warning",
-      title: "At least one preliminary KL/r check exceeds its limit",
+      title: "At least one preliminary design check exceeds its limit",
       detail:
-        `${counts.exceeds} member groups currently exceed their preliminary ASCE slenderness limit. These need redesign or deeper structural verification.`,
-      source: "ASCE 10-15 §3.4"
+        `${counts.exceeds} member groups currently exceed their preliminary leg buckling or admissible stress screen. These need redesign or deeper structural verification.`,
+      source: "ASCE 10-15 §3.4 / §3.6 context"
     });
   } else if (counts.close / Math.max(items.length, 1) > 0.2) {
     warnings.push({
       id: "slenderness-close",
       severity: "caution",
-      title: "A significant share of members are close to limit",
+      title: "A significant share of checks are close to limit",
       detail:
         `${counts.close} out of ${items.length} representative member checks are within 10% of their limit. This is acceptable for a pilot, but it deserves review before treating the case as stable.`,
-      source: "ASCE 10-15 §3.4"
+      source: "ASCE 10-15 §3.4 / §3.6 context"
     });
   }
 
   const worstItems = [...items]
-    .sort(
-      (left, right) =>
-        right.result.klr / right.result.limit - left.result.klr / left.result.limit
-    )
+    .sort((left, right) => resultUtilization(right.result) - resultUtilization(left.result))
     .slice(0, 8);
 
   const mostCriticalPanel = [...panelsSummary].sort((left, right) => {
@@ -311,7 +453,7 @@ export function calculateDesignChecks({
       (left, right) => severityRank(right.severity) - severityRank(left.severity)
     ),
     worstKlr,
-    worstPanelNumber: mostCriticalPanel?.panelNumber ?? null
+    worstPanelNumber: mostCriticalPanel?.panelNumber ?? null,
+    endCondition
   };
 }
-

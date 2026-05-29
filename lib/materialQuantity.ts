@@ -1,6 +1,5 @@
 import { type PanelElementLengths } from "@/lib/elementLengths";
-import { type PanelMemberProfile } from "@/lib/tower";
-import { resolvePropertySection } from "@/lib/slenderness";
+import { angleSectionForLabel, type PanelMemberProfile } from "@/lib/tower";
 
 export const unitWeightsKgPerM: Record<string, number> = {
   "L80×80×8": 9.63,
@@ -48,11 +47,11 @@ function unitWeightForSection(sectionLabel: string) {
     };
   }
 
-  const property = resolvePropertySection(sectionLabel);
+  const property = angleSectionForLabel(sectionLabel);
 
   return {
-    lookup: property.propertySection,
-    weight: unitWeightsKgPerM[property.propertySection] ?? unitWeightsKgPerM["L80×80×8"]
+    lookup: property.label,
+    weight: property.mass_kg_m
   };
 }
 
@@ -86,7 +85,6 @@ export function calculateMaterialEstimate(
   const sectionMap = new Map<string, SectionQuantityRow>();
 
   let legs = 0;
-  let xBraces = 0;
   let kBraces = 0;
   let subHorizontals = 0;
   let horizontals = 0;
@@ -112,16 +110,6 @@ export function calculateMaterialEstimate(
       member.horizontalPropertySection,
       horizontalContribution
     );
-
-    if (panel.xBraceDiag) {
-      const diagonalContribution = panel.xBraceDiag * 8;
-      xBraces += diagonalContribution;
-      addSectionContribution(
-        sectionMap,
-        member.diagonalPropertySection,
-        diagonalContribution
-      );
-    }
 
     if (panel.kBraceDiag) {
       const diagonalContribution = panel.kBraceDiag * 8;
@@ -165,22 +153,6 @@ export function calculateMaterialEstimate(
         )
         .reduce((sum, row) => sum + row.totalMassKg, 0),
       color: "#0f766e"
-    },
-    {
-      key: "x-braces",
-      label: "X-braces",
-      lengthMeters: xBraces,
-      massKg: xBraces
-        ? xBraces *
-          unitWeightForSection(
-            memberProfiles.find((profile) =>
-              panels.some(
-                (panel) => panel.panelIndex === profile.panelNumber && panel.xBraceDiag
-              )
-            )?.diagonalPropertySection ?? "L70×70×6"
-          ).weight
-        : 0,
-      color: "#2563eb"
     },
     {
       key: "k-braces",
@@ -255,4 +227,3 @@ export function calculateMaterialEstimate(
     totalMassKg: sections.reduce((sum, row) => sum + row.totalMassKg, 0)
   };
 }
-

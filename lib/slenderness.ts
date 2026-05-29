@@ -1,3 +1,5 @@
+import { angleSectionForLabel } from "@/lib/tower";
+
 export const rMin: Record<string, number> = {
   "L45×45×5": 8.8,
   "L50×50×5": 9.8,
@@ -21,15 +23,46 @@ export type SlendernessRole =
   | "hip";
 
 export type SlendernessStatus = "pass" | "close" | "exceeds";
+export type EndCondition = "pin-pin" | "fixed-free";
+
+const DEFAULT_ELASTIC_MODULUS_GPA = 200;
+const DEFAULT_SAFETY_FACTOR = 1.67;
 
 export interface SlendernessResult {
+  role: SlendernessRole;
   sectionLabel: string;
   propertySection: string;
   radiusMm: number;
   klr: number;
   limit: number;
   status: SlendernessStatus;
+  klrStatus: SlendernessStatus;
+  sigmaCreMpa: number;
+  sigmaDemandMpa: number;
+  sigmaAdmissibleMpa: number;
+  stressStatus: SlendernessStatus;
+  eulerStatus: SlendernessStatus;
+  derivedKlrLimit: number;
+  endCondition: EndCondition;
   note: string;
+}
+
+function rankStatus(status: SlendernessStatus) {
+  if (status === "exceeds") {
+    return 3;
+  }
+
+  if (status === "close") {
+    return 2;
+  }
+
+  return 1;
+}
+
+function worstStatus(statuses: SlendernessStatus[]) {
+  return statuses.reduce((worst, current) =>
+    rankStatus(current) > rankStatus(worst) ? current : worst
+  );
 }
 
 export function resolvePropertySection(sectionLabel: string): {
@@ -85,30 +118,106 @@ export function slendernessStatus(
   return "pass";
 }
 
+export function computeEulerStress(
+  klr: number,
+  E_GPa = DEFAULT_ELASTIC_MODULUS_GPA
+): number {
+  if (klr <= 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return (E_GPa * 1000 * Math.PI ** 2) / klr ** 2;
+}
+
+export function computeAdmissibleStress(
+  fyMpa: number,
+  safetyFactor = DEFAULT_SAFETY_FACTOR
+): number {
+  return fyMpa / safetyFactor;
+}
+
+export function demandStressStatus(
+  sigmaDemandMpa: number,
+  sigmaCapacityMpa: number
+): SlendernessStatus {
+  if (sigmaDemandMpa > sigmaCapacityMpa) {
+    return "exceeds";
+  }
+
+  if (sigmaDemandMpa > sigmaCapacityMpa * 0.9) {
+    return "close";
+  }
+
+  return "pass";
+}
+
+export function derivedKlrLimitForDemand(
+  sigmaDemandMpa: number,
+  E_GPa = DEFAULT_ELASTIC_MODULUS_GPA
+): number {
+  if (sigmaDemandMpa <= 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return Math.sqrt((E_GPa * 1000 * Math.PI ** 2) / sigmaDemandMpa);
+}
+
 export function checkSlenderness({
   lengthMeters,
   sectionLabel,
   role,
-  kFactor = 1
+  endCondition = "pin-pin",
+  kFactor,
+  fyMpa = role === "leg" ? 345 : 250,
+  sigmaDemandMpa = 0
 }: {
   lengthMeters: number;
   sectionLabel: string;
   role: SlendernessRole;
+  endCondition?: EndCondition;
   kFactor?: number;
+  fyMpa?: number;
+  sigmaDemandMpa?: number;
 }): SlendernessResult {
   const property = resolvePropertySection(sectionLabel);
-  const radiusMm = rMin[property.propertySection] ?? rMin["L80×80×8"];
-  const klr = (kFactor * lengthMeters * 1000) / radiusMm;
+  const fallbackSection = angleSectionForLabel(property.propertySection);
+  const radiusMm = rMin[property.propertySection] ?? fallbackSection.r_min_mm;
+  const effectiveKFactor =
+    kFactor ?? (endCondition === "fixed-free" ? 2 : 1);
+  const klr = (effectiveKFactor * lengthMeters * 1000) / radiusMm;
   const limit = slendernessLimit(role);
+  const klrStatus = slendernessStatus(klr, limit);
+  const sigmaCreMpa = computeEulerStress(klr);
+  const sigmaAdmissibleMpa = computeAdmissibleStress(fyMpa);
+  const stressStatus = demandStressStatus(
+    sigmaDemandMpa,
+    sigmaAdmissibleMpa
+  );
+  const eulerStatus =
+    role === "leg" && sigmaDemandMpa > 0
+      ? demandStressStatus(sigmaDemandMpa, sigmaCreMpa)
+      : klrStatus;
+  const status =
+    role === "leg"
+      ? worstStatus([klrStatus, stressStatus, eulerStatus])
+      : stressStatus;
 
   return {
+    role,
     sectionLabel,
     propertySection: property.propertySection,
     radiusMm,
     klr,
     limit,
-    status: slendernessStatus(klr, limit),
+    status,
+    klrStatus,
+    sigmaCreMpa,
+    sigmaDemandMpa,
+    sigmaAdmissibleMpa,
+    stressStatus,
+    eulerStatus,
+    derivedKlrLimit: derivedKlrLimitForDemand(sigmaDemandMpa),
+    endCondition,
     note: property.note
   };
 }
-

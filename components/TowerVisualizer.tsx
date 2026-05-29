@@ -94,8 +94,11 @@ function elementTooltipData({
         value: `${steel} | ${fyMpa} MPa`
       },
       {
-        label: "KL/r",
-        value: `${slenderness.klr.toFixed(0)} / ${slenderness.limit} (${slenderness.status})`
+        label: role === "leg" ? "KL/r" : "Check basis",
+        value:
+          role === "leg"
+            ? `${slenderness.klr.toFixed(0)} / ${slenderness.limit} (${slenderness.status})`
+            : "Admissible stress only"
       },
       {
         label: "Source",
@@ -103,7 +106,9 @@ function elementTooltipData({
       }
     ],
     footer:
-      "KL/r is a preliminary check using approximate radius of gyration values from the AISC manual + Bilionis-based member mapping."
+      role === "leg"
+        ? "KL/r is a preliminary leg buckling screen using approximate radius of gyration values from the AISC manual + Bilionis-based member mapping."
+        : "K-brace diagonals and horizontals are checked in the Design Checks tab by admissible stress only."
   };
 }
 
@@ -257,50 +262,7 @@ export function TowerVisualizer({
         }
       ];
 
-      if (panel.bracingType === "X" && panel.xBraceDiag) {
-        baseElements.push(
-          {
-            id: `x1-${panel.panelIndex}`,
-            x1: leftBottom,
-            y1: yBottom,
-            x2: rightTop,
-            y2: yTop,
-            strokeWidth: 3,
-            color: "#64748b",
-            tooltip: elementTooltipData({
-              elementType: `X-brace diagonal | Panel ${panel.panelIndex}`,
-              lengthMeters: panel.xBraceDiag,
-              section: member.diagonalSection,
-              steel: member.bracingSteel,
-              fyMpa: member.bracingFyMpa,
-              role: "bracing",
-              sourceCitation: "Elementary geometry + Bilionis 2019",
-              unitSystem
-            })
-          },
-          {
-            id: `x2-${panel.panelIndex}`,
-            x1: rightBottom,
-            y1: yBottom,
-            x2: leftTop,
-            y2: yTop,
-            strokeWidth: 3,
-            color: "#64748b",
-            tooltip: elementTooltipData({
-              elementType: `X-brace diagonal | Panel ${panel.panelIndex}`,
-              lengthMeters: panel.xBraceDiag,
-              section: member.diagonalSection,
-              steel: member.bracingSteel,
-              fyMpa: member.bracingFyMpa,
-              role: "bracing",
-              sourceCitation: "Elementary geometry + Bilionis 2019",
-              unitSystem
-            })
-          }
-        );
-      }
-
-      if (panel.bracingType === "K" && panel.kBraceDiag && panel.subHorizontal) {
+      if (panel.kBraceDiag && panel.subHorizontal) {
         const kTargetY = config.bracing === "K-Down" ? midY + 16 : yTop;
         const kTargetX = config.bracing === "K-Down" ? midBottom : midTop;
 

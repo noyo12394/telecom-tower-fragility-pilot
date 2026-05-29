@@ -8,8 +8,10 @@ import { type MaterialEstimate } from "@/lib/materialQuantity";
 import {
   buildAnalysisBundle,
   buildDesignSummary,
+  buildPythonWorkflowInput,
   buildPrintableReportHtml
 } from "@/lib/reporting";
+import { type EndCondition } from "@/lib/slenderness";
 import type { TraceabilityRow } from "@/lib/sources";
 import { buildAdvisorExplanation, buildGeometryCsv, type TowerConfig } from "@/lib/tower";
 
@@ -19,6 +21,7 @@ interface ExportPanelProps {
   checks: DesignCheckSummary;
   material: MaterialEstimate;
   panels: PanelElementLengths[];
+  endCondition: EndCondition;
 }
 
 function downloadTextFile(fileName: string, text: string, mimeType: string) {
@@ -66,7 +69,8 @@ export function ExportPanel({
   rows,
   checks,
   material,
-  panels
+  panels,
+  endCondition
 }: ExportPanelProps) {
   const [message, setMessage] = useState<string>("");
 
@@ -174,6 +178,20 @@ export function ExportPanel({
 
         <button
           type="button"
+          onClick={() =>
+            downloadTextFile(
+              "telecom-tower-python-input.json",
+              JSON.stringify(buildPythonWorkflowInput(config, endCondition), null, 2),
+              "application/json;charset=utf-8"
+            )
+          }
+          className="rounded-2xl border border-line bg-slate-50 px-4 py-4 text-left text-sm font-medium text-navy transition hover:border-accent/40 hover:bg-white"
+        >
+          Export as Python input JSON
+        </button>
+
+        <button
+          type="button"
           onClick={openPrintableReport}
           className="rounded-2xl border border-line bg-slate-50 px-4 py-4 text-left text-sm font-medium text-navy transition hover:border-accent/40 hover:bg-white"
         >
@@ -197,7 +215,9 @@ export function ExportPanel({
 
       <p className="mt-4 text-sm leading-6 text-steel">
         The printable report opens in a new tab so you can use the browser print
-        dialog to save a PDF for your professor meeting.
+        dialog to save a PDF for your professor meeting. A Python workflow is
+        available in scripts/generate_tower_design.py for reproducible
+        script-based generation.
       </p>
     </section>
   );

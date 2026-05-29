@@ -43,11 +43,6 @@ export function ElementLengthTable({
     () => rows.reduce((sum, row) => sum + row.legLength, 0),
     [rows]
   );
-  const totalXBrace = useMemo(
-    () =>
-      rows.reduce((sum, row) => sum + (row.xBraceDiag ? row.xBraceDiag * 8 : 0), 0),
-    [rows]
-  );
   const totalKBrace = useMemo(
     () =>
       rows.reduce((sum, row) => sum + (row.kBraceDiag ? row.kBraceDiag * 8 : 0), 0),
@@ -57,7 +52,7 @@ export function ElementLengthTable({
     () => rows.reduce((sum, row) => sum + row.horizontal * 4, 0),
     [rows]
   );
-  const maxSummary = Math.max(oneLegTotal, totalXBrace, totalKBrace, totalHorizontals, 1);
+  const maxSummary = Math.max(oneLegTotal, totalKBrace, totalHorizontals, 1);
 
   function togglePanel(panelNumber: number) {
     setExpandedPanels((current) =>
@@ -107,7 +102,7 @@ export function ElementLengthTable({
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="overflow-x-auto rounded-[24px] border border-line">
-          <table className="min-w-[1280px] text-left text-sm">
+          <table className="min-w-[1180px] text-left text-sm">
             <thead className="bg-slate-50 text-steel">
               <tr>
                 <th className="px-4 py-3">Panel</th>
@@ -115,7 +110,6 @@ export function ElementLengthTable({
                 <th className="px-4 py-3">w(bottom)</th>
                 <th className="px-4 py-3">w(top)</th>
                 <th className="px-4 py-3">Leg length</th>
-                <th className="px-4 py-3">X-brace</th>
                 <th className="px-4 py-3">K-diagonal</th>
                 <th className="px-4 py-3">Sub-horizontal</th>
                 <th className="px-4 py-3">Horizontal chord</th>
@@ -137,39 +131,6 @@ export function ElementLengthTable({
                   sectionLabel: member.legPropertySection,
                   role: "leg"
                 });
-                const xCheck = row.xBraceDiag
-                  ? checkSlenderness({
-                      lengthMeters: row.xBraceDiag,
-                      sectionLabel: member.diagonalPropertySection,
-                      role: "bracing"
-                    })
-                  : null;
-                const kCheck = row.kBraceDiag
-                  ? checkSlenderness({
-                      lengthMeters: row.kBraceDiag,
-                      sectionLabel: member.diagonalPropertySection,
-                      role: "bracing"
-                    })
-                  : null;
-                const subHorizontalCheck = row.subHorizontal
-                  ? checkSlenderness({
-                      lengthMeters: row.subHorizontal,
-                      sectionLabel: member.horizontalPropertySection,
-                      role: "redundant"
-                    })
-                  : null;
-                const horizontalCheck = checkSlenderness({
-                  lengthMeters: row.horizontal,
-                  sectionLabel: member.horizontalPropertySection,
-                  role: "redundant"
-                });
-                const hipCheck = row.hipBraceDiag
-                  ? checkSlenderness({
-                      lengthMeters: row.hipBraceDiag,
-                      sectionLabel: member.diagonalPropertySection,
-                      role: "redundant"
-                    })
-                  : null;
                 const expanded = expandedPanels.includes(row.panelIndex);
 
                 return (
@@ -198,47 +159,25 @@ export function ElementLengthTable({
                         <SlendernessCheck result={legCheck} compact />
                       </td>
                       <td className="px-4 py-4 text-navy">
-                        {row.xBraceDiag ? (
-                          <>
-                            <div>{formatLengthShort(row.xBraceDiag, unitSystem)}</div>
-                            <SlendernessCheck result={xCheck!} compact />
-                          </>
-                        ) : (
-                          <span className="text-steel">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-navy">
                         {row.kBraceDiag ? (
-                          <>
-                            <div>{formatLengthShort(row.kBraceDiag, unitSystem)}</div>
-                            <SlendernessCheck result={kCheck!} compact />
-                          </>
+                          <div>{formatLengthShort(row.kBraceDiag, unitSystem)}</div>
                         ) : (
                           <span className="text-steel">—</span>
                         )}
                       </td>
                       <td className="px-4 py-4 text-navy">
                         {row.subHorizontal ? (
-                          <>
-                            <div>
-                              {formatLengthShort(row.subHorizontal, unitSystem)}
-                            </div>
-                            <SlendernessCheck result={subHorizontalCheck!} compact />
-                          </>
+                          <div>{formatLengthShort(row.subHorizontal, unitSystem)}</div>
                         ) : (
                           <span className="text-steel">—</span>
                         )}
                       </td>
                       <td className="px-4 py-4 text-navy">
                         <div>{formatLengthShort(row.horizontal, unitSystem)}</div>
-                        <SlendernessCheck result={horizontalCheck} compact />
                       </td>
                       <td className="px-4 py-4 text-navy">
                         {row.hipBraceDiag ? (
-                          <>
-                            <div>{formatLengthShort(row.hipBraceDiag, unitSystem)}</div>
-                            <SlendernessCheck result={hipCheck!} compact />
-                          </>
+                          <div>{formatLengthShort(row.hipBraceDiag, unitSystem)}</div>
                         ) : (
                           <span className="text-steel">—</span>
                         )}
@@ -268,7 +207,7 @@ export function ElementLengthTable({
                     </tr>
                     {expanded ? (
                       <tr className="border-t border-line bg-slate-50/70">
-                        <td colSpan={12} className="px-4 py-5">
+                        <td colSpan={11} className="px-4 py-5">
                           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
                             <div className="rounded-3xl border border-line bg-white p-5">
                               <p className="micro-label">
@@ -352,12 +291,6 @@ export function ElementLengthTable({
                 value: oneLegTotal,
                 note: "Sum of all panel leg lengths on a single tower leg.",
                 color: "#0f766e"
-              },
-              {
-                label: "All X-brace diagonals",
-                value: totalXBrace,
-                note: "2 diagonals per face × 4 faces for X-braced panels.",
-                color: "#2563eb"
               },
               {
                 label: "All K-brace diagonals",

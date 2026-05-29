@@ -1,6 +1,6 @@
 import { computeCf } from "@/lib/wind";
 
-export type PanelBracingFamily = "K" | "X";
+export type PanelBracingFamily = "K";
 
 export interface PanelElementLengths {
   panelIndex: number;
@@ -12,7 +12,6 @@ export interface PanelElementLengths {
   averageWidth: number;
   horizontalOffset: number;
   legLength: number;
-  xBraceDiag: number | null;
   kBraceDiag: number | null;
   subHorizontal: number | null;
   horizontal: number;
@@ -47,10 +46,6 @@ export function legLength(
   return Math.sqrt(panelHeight ** 2 + horizontalOffset ** 2);
 }
 
-export function xBraceDiagonal(panelHeight: number, wBottom: number): number {
-  return Math.sqrt(panelHeight ** 2 + wBottom ** 2);
-}
-
 export function kBraceDiagonal(
   panelHeight: number,
   wBottom: number,
@@ -80,31 +75,15 @@ export function approximateSolidityRatio(
   return 0.2 + 0.05 * (1 - panelZeroBasedIndex / panelCount);
 }
 
-function resolvedPanelBracing(
-  bracingType: string,
-  panelNumber: number,
-  kPanels: number
-): PanelBracingFamily {
-  if (bracingType === "X") {
-    return "X";
-  }
-
-  if (bracingType === "Mixed K/X") {
-    return panelNumber <= kPanels ? "K" : "X";
-  }
-
-  return "K";
-}
-
 export function calculateAllPanelLengths(
   H: number,
   nPanels: number,
   wBase: number,
   wTop: number,
   bracingType: string,
-  kPanels = 2,
   hipPanels: number[] = [3, 6, 9]
 ): PanelElementLengths[] {
+  void bracingType;
   const panelHeightValue = H / nPanels;
 
   return Array.from({ length: nPanels }, (_, zeroBasedIndex) => {
@@ -115,7 +94,6 @@ export function calculateAllPanelLengths(
     const wTopPanel = faceWidthAtElevation(elevTop, H, wBase, wTop);
     const averageWidth = (wBottom + wTopPanel) / 2;
     const horizontalOffset = (wBottom - wTopPanel) / 2;
-    const panelBracing = resolvedPanelBracing(bracingType, panelNumber, kPanels);
     const solidityRatio = approximateSolidityRatio(zeroBasedIndex, nPanels);
 
     return {
@@ -128,19 +106,13 @@ export function calculateAllPanelLengths(
       averageWidth,
       horizontalOffset,
       legLength: legLength(panelHeightValue, wBottom, wTopPanel),
-      xBraceDiag:
-        panelBracing === "X" ? xBraceDiagonal(panelHeightValue, wBottom) : null,
-      kBraceDiag:
-        panelBracing === "K"
-          ? kBraceDiagonal(panelHeightValue, wBottom, wTopPanel)
-          : null,
-      subHorizontal:
-        panelBracing === "K" ? subHorizontal(wBottom, wTopPanel) : null,
+      kBraceDiag: kBraceDiagonal(panelHeightValue, wBottom, wTopPanel),
+      subHorizontal: subHorizontal(wBottom, wTopPanel),
       horizontal: horizontalChord(wBottom),
       hipBraceDiag: hipPanels.includes(panelNumber)
         ? hipBraceDiagonal(wBottom)
         : null,
-      bracingType: panelBracing,
+      bracingType: "K",
       isHipPanel: hipPanels.includes(panelNumber),
       solidityRatio,
       dragCoefficient: computeCf(solidityRatio)
@@ -177,20 +149,6 @@ export function panelCalculationBlocks(panel: PanelElementLengths): CalculationB
       source:
         "Pythagorean theorem; ASCE 10-15 §2.3 geometric analysis framing."
     },
-    ...(panel.xBraceDiag
-      ? [
-          {
-            title: "X-brace diagonal",
-            lines: [
-              `Length = √(${panel.panelHeight.toFixed(3)}² + ${panel.wBottom.toFixed(
-                3
-              )}²) = ${panel.xBraceDiag.toFixed(3)} m`
-            ],
-            source:
-              "Elementary geometry; Bilionis & Vamvatsikos 2019 panel geometry precedent."
-          }
-        ]
-      : []),
     ...(panel.kBraceDiag
       ? [
           {

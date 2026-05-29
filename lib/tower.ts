@@ -4,11 +4,7 @@ export type BadgeTier =
   | "Derived/Assumed";
 
 export type HeightOption = 40 | 48 | 50 | 60 | 80;
-export type BracingOption =
-  | "Double K/K-B"
-  | "X"
-  | "K-Down"
-  | "Mixed K/X";
+export type BracingOption = "Double K/K-B" | "K-Down";
 export type PlanOption = "Square" | "Triangular";
 export type ExposureOption = "B" | "C" | "D";
 export type RiskCategoryOption = "I" | "II" | "III" | "IV";
@@ -70,12 +66,19 @@ export interface PanelMemberProfile {
   basisNote: string;
 }
 
+export interface AngleSection {
+  label: string;
+  A_mm2: number;
+  r_min_mm: number;
+  mass_kg_m: number;
+}
+
 export const DEFAULT_CONFIG: TowerConfig = {
   heightMeters: 60,
   panelCount: 10,
   bottomWidthMeters: 6.0,
   topWidthMeters: 1.2,
-  bracing: "Mixed K/X",
+  bracing: "Double K/K-B",
   plan: "Square",
   appurtenances: true,
   windSpeedMph: 115,
@@ -158,6 +161,42 @@ export const MEMBER_SIZE_ROWS: MemberSizeRow[] = [
     horizontal: "L45×45×5"
   }
 ];
+
+export const ANGLE_SECTIONS = [
+  { label: "L45×45×5", A_mm2: 430, r_min_mm: 8.8, mass_kg_m: 3.4 },
+  { label: "L50×50×5", A_mm2: 480, r_min_mm: 9.8, mass_kg_m: 3.77 },
+  { label: "L60×60×6", A_mm2: 691, r_min_mm: 11.8, mass_kg_m: 5.42 },
+  { label: "L70×70×6", A_mm2: 826, r_min_mm: 13.7, mass_kg_m: 6.5 },
+  { label: "L75×75×6", A_mm2: 877, r_min_mm: 14.7, mass_kg_m: 6.87 },
+  { label: "L80×80×8", A_mm2: 1230, r_min_mm: 15.6, mass_kg_m: 9.66 },
+  { label: "L90×90×7", A_mm2: 1230, r_min_mm: 17.7, mass_kg_m: 9.64 },
+  { label: "L100×100×10", A_mm2: 1920, r_min_mm: 19.5, mass_kg_m: 15.1 },
+  { label: "L120×120×12", A_mm2: 2750, r_min_mm: 23.5, mass_kg_m: 21.6 },
+  { label: "L140×140×13", A_mm2: 3560, r_min_mm: 27.5, mass_kg_m: 27.9 },
+  { label: "L160×160×15", A_mm2: 4680, r_min_mm: 31.4, mass_kg_m: 36.8 }
+] as const satisfies readonly AngleSection[];
+
+export function angleSectionForLabel(sectionLabel: string): AngleSection {
+  const direct = ANGLE_SECTIONS.find((section) => section.label === sectionLabel);
+
+  if (direct) {
+    return direct;
+  }
+
+  if (sectionLabel === "L100×100×8") {
+    return ANGLE_SECTIONS.find((section) => section.label === "L100×100×10")!;
+  }
+
+  if (sectionLabel === "L60×60×5") {
+    return ANGLE_SECTIONS.find((section) => section.label === "L60×60×6")!;
+  }
+
+  if (sectionLabel === "L65×65×5") {
+    return ANGLE_SECTIONS.find((section) => section.label === "L70×70×6")!;
+  }
+
+  return ANGLE_SECTIONS.find((section) => section.label === "L80×80×8")!;
+}
 
 const PANEL_MEMBER_REFERENCE: Record<
   number,
@@ -325,10 +364,7 @@ export function bracingForPanel(
   config: TowerConfig,
   panelNumber: number
 ): BracingOption | "K" {
-  if (config.bracing === "Mixed K/X") {
-    return panelNumber <= 2 ? "K" : "X";
-  }
-
+  void panelNumber;
   return config.bracing;
 }
 
@@ -441,11 +477,7 @@ export function panelMemberProfile(panelNumber: number, panelCount: number) {
 }
 
 export function buildAdvisorExplanation(config: TowerConfig) {
-  return `My tower design follows a design-manual workflow rather than copying an existing tower. TSTower's self-supporting tower manual defines geometry through total height, top/bottom face widths, and section height — I adopted this input logic. TIA-222-H provides the structural code basis, including wind loading (§2.6), serviceability (§2.8), and member design references. I selected ${config.heightMeters} m as the representative height based on Rasool et al. 2022, which studies 40/60/80 m towers under TIA-222-H. The tapered square lattice form and member size baseline come from Bilionis & Vamvatsikos 2019. ${
-    config.bracing === "Mixed K/X"
-      ? "Mixed K/X bracing follows Khazaali dissertation §4.5 and is consistent with the 60 m bracing study showing Double K/K-B as the most efficient pattern."
-      : `${config.bracing} is included because the 60 m bracing study explicitly compares this pattern under wind loading.`
-  } Member proportioning follows ASCE/SEI 10-15 §3.4 slenderness limits and §3.6 compression formulas. Base width (${config.bottomWidthMeters.toFixed(
+  return `My tower design follows a design-manual workflow rather than copying an existing tower. TSTower's self-supporting tower manual defines geometry through total height, top/bottom face widths, and section height — I adopted this input logic. TIA-222-H provides the structural code basis, including wind loading (§2.6), serviceability (§2.8), and member design references. I selected ${config.heightMeters} m as the representative height based on Rasool et al. 2022, which studies 40/60/80 m towers under TIA-222-H. The tapered square lattice form and member size baseline come from Bilionis & Vamvatsikos 2019. ${config.bracing} is included because the 60 m bracing study explicitly compares K-bracing patterns under wind loading, and the current check model keeps buckling unambiguous by applying KL/r and Euler σ_cr screens to legs only. Member proportioning follows ASCE/SEI 10-15 §3.4 slenderness limits and §3.6 compression formulas. Base width (${config.bottomWidthMeters.toFixed(
     1
   )} m) and top width (${config.topWidthMeters.toFixed(
     1

@@ -43,7 +43,13 @@ export function SlendernessCheck({
             result.status
           )}`}
         >
-          KL/r {result.klr.toFixed(0)} / {result.limit} {statusLabel(result.status)}
+          {result.role === "leg"
+            ? `KL/r ${result.klr.toFixed(0)} / ${result.limit} ${statusLabel(
+                result.status
+              )}`
+            : `σ ${result.sigmaDemandMpa.toFixed(1)} / ${result.sigmaAdmissibleMpa.toFixed(
+                1
+              )} MPa ${statusLabel(result.status)}`}
         </span>
       </div>
     );
@@ -71,6 +77,22 @@ export function SlendernessCheck({
           <dd>{result.limit}</dd>
         </div>
         <div>
+          <dt className="font-medium text-navy">σ demand</dt>
+          <dd>{result.sigmaDemandMpa.toFixed(2)} MPa</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-navy">σ admissible</dt>
+          <dd>{result.sigmaAdmissibleMpa.toFixed(1)} MPa</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-navy">σcr Euler</dt>
+          <dd>{result.role === "leg" ? `${result.sigmaCreMpa.toFixed(1)} MPa` : "Legs only"}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-navy">End condition</dt>
+          <dd>{result.endCondition === "fixed-free" ? "Fixed-free" : "Pin-pin"}</dd>
+        </div>
+        <div>
           <dt className="font-medium text-navy">r(min)</dt>
           <dd>{result.radiusMm.toFixed(1)} mm</dd>
         </div>
@@ -83,4 +105,3 @@ export function SlendernessCheck({
     </div>
   );
 }
-

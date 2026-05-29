@@ -132,7 +132,7 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://technologyjournal.net/wp-content/uploads/9-JOT1667.pdf",
     category: "Literature",
     detail:
-      "Compares Double K/K-B, X-brace, and K-Down performance under wind loading.",
+      "Compares Double K/K-B and K-Down performance under wind loading.",
     tier: "Literature-Backed"
   },
   {
@@ -164,7 +164,7 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     url: "https://preserve.lehigh.edu/lehigh-scholarship/graduate-publications-theses-dissertations/theses-dissertations/damage",
     category: "Advisor Research Group",
     detail:
-      "Advisor research-group context for 10-panel tower configuration and mixed K/X bracing layout.",
+      "Advisor research-group context for the 10-panel tower configuration and telecom tower workflow.",
     tier: "Literature-Backed"
   },
   {
@@ -398,32 +398,20 @@ export function buildTraceabilityRows(
     {
       parameter: "Bracing pattern",
       value: config.bracing,
-      tier:
-        config.bracing === "Mixed K/X" || config.bracing === "Double K/K-B"
-          ? "Literature-Backed"
-          : "Derived/Assumed",
+      tier: "Literature-Backed",
       sourceLabel:
-        config.bracing === "Mixed K/X"
-          ? "Khazaali Dissertation §4.5"
-          : config.bracing === "Double K/K-B"
-            ? "60 m Bracing Study"
-            : "Exploratory pattern",
+        config.bracing === "Double K/K-B"
+          ? "60 m Bracing Study"
+          : "60 m Bracing Study / comparison option",
       clausePage:
-        config.bracing === "Mixed K/X"
-          ? "K lower panels, X upper panels"
-          : config.bracing === "Double K/K-B"
-            ? "Lowest utilization reported"
-            : "Exploratory selection",
+        config.bracing === "Double K/K-B"
+          ? "Lowest utilization reported"
+          : "K-Down comparison case",
       justification:
-        config.bracing === "Mixed K/X"
-          ? "Matches the advisor-group pilot bracing layout for telecom towers."
-          : config.bracing === "Double K/K-B"
-            ? "Selected because the 60 m study reported the lowest overall utilization for this pattern."
-            : "Included for comparison but not assigned as the default literature-backed pilot arrangement.",
-      link:
-        config.bracing === "Mixed K/X"
-          ? sourceUrl("khazaali-dissertation")
-          : sourceUrl("bracing-study"),
+        config.bracing === "Double K/K-B"
+          ? "Selected because the 60 m study reported the lowest overall utilization for this K-bracing pattern."
+          : "Included as the professor-requested K-bracing comparison while keeping buckling checks limited to leg members.",
+      link: sourceUrl("bracing-study"),
       userEdited: config.bracing !== defaultConfig.bracing
     },
     {

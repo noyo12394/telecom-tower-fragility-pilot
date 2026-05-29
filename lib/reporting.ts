@@ -1,6 +1,7 @@
 import { type DesignCheckSummary } from "@/lib/designChecks";
 import { type PanelElementLengths } from "@/lib/elementLengths";
 import { type MaterialEstimate } from "@/lib/materialQuantity";
+import { type EndCondition } from "@/lib/slenderness";
 import { buildAdvisorExplanation, type TowerConfig } from "@/lib/tower";
 import { type TraceabilityRow } from "@/lib/sources";
 
@@ -37,6 +38,7 @@ export function buildDesignSummary(
         `- Exceeds: ${checks.counts.exceeds}`,
         `- Worst KL/r: ${checks.worstKlr.toFixed(1)}`,
         `- Most critical panel: ${checks.worstPanelNumber ?? "n/a"}`,
+        `- Buckling scope: leg members only; bracing uses admissible stress screening`,
         ""
       ]
     : [];
@@ -53,6 +55,21 @@ export function buildDesignSummary(
     "Traceability:",
     ...traceLines
   ].join("\n");
+}
+
+export function buildPythonWorkflowInput(
+  config: TowerConfig,
+  endCondition: EndCondition = "pin-pin"
+) {
+  return {
+    height_m: config.heightMeters,
+    base_width_m: config.bottomWidthMeters,
+    top_width_m: config.topWidthMeters,
+    wind_speed_mph: config.windSpeedMph,
+    bracing: config.bracing,
+    panel_count: config.panelCount,
+    end_condition: endCondition
+  };
 }
 
 export function buildAnalysisBundle(input: {
@@ -106,6 +123,9 @@ export function buildPrintableReportHtml(input: {
         <td>P${item.panelNumber}</td>
         <td>${item.elementType}</td>
         <td>${item.section}</td>
+        <td>${item.result.sigmaDemandMpa.toFixed(2)}</td>
+        <td>${item.result.sigmaAdmissibleMpa.toFixed(1)}</td>
+        <td>${item.result.role === "leg" ? item.result.sigmaCreMpa.toFixed(1) : "Legs only"}</td>
         <td>${item.result.klr.toFixed(1)}</td>
         <td>${item.result.limit}</td>
         <td>${item.result.status}</td>
@@ -185,6 +205,7 @@ export function buildPrintableReportHtml(input: {
         <p>Exceeds: ${checks.counts.exceeds}</p>
         <p>Worst KL/r: ${checks.worstKlr.toFixed(1)}</p>
         <p>Most critical panel: ${checks.worstPanelNumber ?? "n/a"}</p>
+        <p>Buckling scope: leg members only; K-bracing and horizontals use admissible stress screening.</p>
       </div>
     </div>
 
@@ -208,7 +229,7 @@ export function buildPrintableReportHtml(input: {
       <h2>Critical slenderness checks</h2>
       <table>
         <thead>
-          <tr><th>Panel</th><th>Element</th><th>Section</th><th>KL/r</th><th>Limit</th><th>Status</th></tr>
+          <tr><th>Panel</th><th>Element</th><th>Section</th><th>σ demand MPa</th><th>σ adm MPa</th><th>σcr MPa</th><th>KL/r</th><th>Limit</th><th>Status</th></tr>
         </thead>
         <tbody>${criticalRows}</tbody>
       </table>
@@ -242,4 +263,3 @@ export function buildPrintableReportHtml(input: {
   </body>
 </html>`;
 }
-
