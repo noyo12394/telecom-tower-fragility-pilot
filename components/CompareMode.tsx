@@ -25,9 +25,7 @@ interface CompareModeProps {
 const HEIGHTS: HeightOption[] = [40, 48, 50, 60, 80];
 const BRACINGS: BracingOption[] = [
   "Double K/K-B",
-  "X",
-  "K-Down",
-  "Mixed K/X"
+  "K-Down"
 ];
 
 function CompareControlCard({
