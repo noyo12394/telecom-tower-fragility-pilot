@@ -6,6 +6,7 @@ import { AssumptionsPanel } from "@/components/AssumptionsPanel";
 import { CompareMode } from "@/components/CompareMode";
 import { ComparisonPresets } from "@/components/ComparisonPresets";
 import { ControlsPanel } from "@/components/ControlsPanel";
+import { DesignAdvisor } from "@/components/DesignAdvisor";
 import { DesignChecks } from "@/components/DesignChecks";
 import { ElementDetailDrawer } from "@/components/ElementDetailDrawer";
 import { ElementLengthTable } from "@/components/ElementLengthTable";
@@ -363,6 +364,11 @@ export default function Page() {
     if (activeTab === "checks") {
       return (
         <div className="space-y-6">
+          <DesignAdvisor
+            config={config}
+            checks={designCheckSummary}
+            onApplyConfig={setConfig}
+          />
           <DesignChecks
             summary={designCheckSummary}
             unitSystem={unitSystem}
