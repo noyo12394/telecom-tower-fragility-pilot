@@ -1,6 +1,6 @@
 import { computeCf } from "@/lib/wind";
 
-export type PanelBracingFamily = "K" | "X";
+export type PanelBracingFamily = "K";
 
 export interface PanelElementLengths {
   panelIndex: number;
@@ -12,7 +12,6 @@ export interface PanelElementLengths {
   averageWidth: number;
   horizontalOffset: number;
   legLength: number;
-  xBraceDiag: number | null;
   kBraceDiag: number | null;
   subHorizontal: number | null;
   horizontal: number;
@@ -47,10 +46,6 @@ export function legLength(
   return Math.sqrt(panelHeight ** 2 + horizontalOffset ** 2);
 }
 
-export function xBraceDiagonal(panelHeight: number, wBottom: number): number {
-  return Math.sqrt(panelHeight ** 2 + wBottom ** 2);
-}
-
 export function kBraceDiagonal(
   panelHeight: number,
   wBottom: number,
@@ -81,18 +76,10 @@ export function approximateSolidityRatio(
 }
 
 function resolvedPanelBracing(
-  bracingType: string,
-  panelNumber: number,
-  kPanels: number
+  _bracingType: string,
+  _panelNumber: number,
+  _kPanels: number
 ): PanelBracingFamily {
-  if (bracingType === "X") {
-    return "X";
-  }
-
-  if (bracingType === "Mixed K/X") {
-    return panelNumber <= kPanels ? "K" : "X";
-  }
-
   return "K";
 }
 
@@ -128,8 +115,6 @@ export function calculateAllPanelLengths(
       averageWidth,
       horizontalOffset,
       legLength: legLength(panelHeightValue, wBottom, wTopPanel),
-      xBraceDiag:
-        panelBracing === "X" ? xBraceDiagonal(panelHeightValue, wBottom) : null,
       kBraceDiag:
         panelBracing === "K"
           ? kBraceDiagonal(panelHeightValue, wBottom, wTopPanel)
@@ -177,20 +162,6 @@ export function panelCalculationBlocks(panel: PanelElementLengths): CalculationB
       source:
         "Pythagorean theorem; ASCE 10-15 §2.3 geometric analysis framing."
     },
-    ...(panel.xBraceDiag
-      ? [
-          {
-            title: "X-brace diagonal",
-            lines: [
-              `Length = √(${panel.panelHeight.toFixed(3)}² + ${panel.wBottom.toFixed(
-                3
-              )}²) = ${panel.xBraceDiag.toFixed(3)} m`
-            ],
-            source:
-              "Elementary geometry; Bilionis & Vamvatsikos 2019 panel geometry precedent."
-          }
-        ]
-      : []),
     ...(panel.kBraceDiag
       ? [
           {

@@ -30,6 +30,8 @@ export interface SlendernessResult {
   limit: number;
   status: SlendernessStatus;
   note: string;
+  sigmaCreMpa: number;
+  endCondition: "pin-pin" | "fixed-free";
 }
 
 export function resolvePropertySection(sectionLabel: string): {
@@ -85,21 +87,31 @@ export function slendernessStatus(
   return "pass";
 }
 
+export function computeEulerStress(effectiveKlr: number): number {
+  const E_MPa = 200000;
+  if (effectiveKlr <= 0) return Infinity;
+  return (E_MPa * Math.PI * Math.PI) / (effectiveKlr * effectiveKlr);
+}
+
 export function checkSlenderness({
   lengthMeters,
   sectionLabel,
   role,
-  kFactor = 1
+  kFactor = 1,
+  endCondition = "pin-pin"
 }: {
   lengthMeters: number;
   sectionLabel: string;
   role: SlendernessRole;
   kFactor?: number;
+  endCondition?: "pin-pin" | "fixed-free";
 }): SlendernessResult {
   const property = resolvePropertySection(sectionLabel);
   const radiusMm = rMin[property.propertySection] ?? rMin["L80×80×8"];
   const klr = (kFactor * lengthMeters * 1000) / radiusMm;
+  const effectiveKlr = endCondition === "fixed-free" ? klr * 2 : klr;
   const limit = slendernessLimit(role);
+  const sigmaCreMpa = computeEulerStress(effectiveKlr);
 
   return {
     sectionLabel,
@@ -107,8 +119,10 @@ export function checkSlenderness({
     radiusMm,
     klr,
     limit,
-    status: slendernessStatus(klr, limit),
-    note: property.note
+    status: slendernessStatus(effectiveKlr, limit),
+    note: property.note,
+    sigmaCreMpa,
+    endCondition
   };
 }
 
