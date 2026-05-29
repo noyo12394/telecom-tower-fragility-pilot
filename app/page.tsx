@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AssumptionsPanel } from "@/components/AssumptionsPanel";
 import { CompareMode } from "@/components/CompareMode";
@@ -23,7 +23,9 @@ import { WindForceChart } from "@/components/WindForceChart";
 import { FragilityCurveChart } from "@/components/FragilityCurveChart";
 import { DesignWorkflow } from "@/components/DesignWorkflow";
 import { LatticeLab } from "@/components/LatticeLab";
+import { ToastProvider, useToast } from "@/components/Toast";
 import { calculateDesignChecks } from "@/lib/designChecks";
+import { decodeUrlState, encodeUrlState } from "@/lib/urlState";
 import { calculateAllPanelLengths } from "@/lib/elementLengths";
 import { calculateMaterialEstimate } from "@/lib/materialQuantity";
 import { buildTraceabilityRows, SOURCE_DOCUMENTS, tierClasses } from "@/lib/sources";
@@ -123,6 +125,15 @@ function TabButton({
 }
 
 export default function Page() {
+  return (
+    <ToastProvider>
+      <PageInner />
+    </ToastProvider>
+  );
+}
+
+function PageInner() {
+  const { toast } = useToast();
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [compareLeftConfig, setCompareLeftConfig] = useState(DEFAULT_CONFIG);
   const [compareRightConfig, setCompareRightConfig] = useState(
@@ -140,6 +151,30 @@ export default function Page() {
   const [compareMode, setCompareMode] = useState(false);
   const [selectedPanel, setSelectedPanel] = useState<number | null>(null);
   const [endCondition, setEndCondition] = useState<"pin-pin" | "fixed-free">("pin-pin");
+  const skipHashWrite = useRef(false);
+
+  // On mount: read initial state from URL hash
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (!hash || hash.length < 3) return;
+    const decoded = decodeUrlState(hash);
+    skipHashWrite.current = true;
+    if (decoded.config) setConfig(decoded.config);
+    if (decoded.tab) setActiveTab(decoded.tab);
+    if (decoded.unitSystem) setUnitSystem(decoded.unitSystem);
+    requestAnimationFrame(() => { skipHashWrite.current = false; });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync state → URL hash (debounced)
+  useEffect(() => {
+    if (skipHashWrite.current) return;
+    const id = setTimeout(() => {
+      const encoded = encodeUrlState({ tab: activeTab, config, unitSystem });
+      history.replaceState(null, "", `#${encoded}`);
+    }, 400);
+    return () => clearTimeout(id);
+  }, [activeTab, config, unitSystem]);
 
   const geometryPanels = generateTowerPanels(config);
   const elementPanels = calculateAllPanelLengths(
@@ -168,6 +203,17 @@ export default function Page() {
   function updateConfig<K extends keyof TowerConfig>(key: K, value: TowerConfig[K]) {
     setConfig((current) => ({ ...current, [key]: value }));
   }
+
+  const handleShare = useCallback(async () => {
+    const encoded = encodeUrlState({ tab: activeTab, config, unitSystem });
+    const url = `${window.location.origin}${window.location.pathname}#${encoded}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Link copied to clipboard!", "success");
+    } catch {
+      toast("Could not copy — check browser permissions", "error");
+    }
+  }, [activeTab, config, unitSystem, toast]);
 
   function handleHeightChange(heightMeters: HeightOption) {
     setConfig((current) => ({
@@ -491,6 +537,14 @@ export default function Page() {
               </button>
               <button
                 type="button"
+                onClick={handleShare}
+                className="rounded-2xl border border-cyan-400/40 bg-cyan-400/10 px-4 py-3 text-sm font-medium text-cyan-300 transition hover:bg-cyan-400/20"
+                title="Copy shareable link with current configuration"
+              >
+                Share ↗
+              </button>
+              <button
+                type="button"
                 onClick={() => setSourcesOpen(true)}
                 className="rounded-2xl border border-white/15 bg-white px-4 py-3 text-sm font-medium text-navy transition hover:bg-slate-100"
                 aria-haspopup="dialog"
@@ -519,30 +573,33 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="border-b border-white/8 bg-[#060e1a]/90">
-        <div className="mx-auto max-w-[1700px] px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div className="border-b border-white/8 bg-[#060e1a]/90 backdrop-blur-sm sticky top-0 z-30">
+        <div className="mx-auto max-w-[1700px] px-4 py-2.5 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
             {[
-              { label: "Tower Height", value: `${config.heightMeters} m` },
-              { label: "Wind Speed", value: `${config.windSpeedMph} mph` },
+              { label: "Height", value: `${config.heightMeters} m` },
+              { label: "Wind", value: `${config.windSpeedMph} mph` },
               { label: "Panels", value: `${config.panelCount}` },
+              { label: "Base", value: `${config.bottomWidthMeters} m` },
+              { label: "Bracing", value: config.bracing },
+              { label: "Exposure", value: config.exposure },
             ].map(kpi => (
-              <div key={kpi.label} className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 uppercase tracking-widest">{kpi.label}</span>
-                <span className="text-sm font-semibold text-cyan-300">{kpi.value}</span>
+              <div key={kpi.label} className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-600 uppercase tracking-widest">{kpi.label}</span>
+                <span className="text-xs font-semibold text-cyan-200 tabular-nums">{kpi.value}</span>
               </div>
             ))}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 uppercase tracking-widest">Checks</span>
-              <span className={`text-sm font-semibold ${designCheckSummary.counts.exceeds > 0 ? "text-red-400" : "text-green-400"}`}>
+            <div className="flex items-center gap-1.5 ml-auto">
+              <span className="text-[10px] text-slate-600 uppercase tracking-widest">Checks</span>
+              <span className={`text-xs font-semibold tabular-nums ${designCheckSummary.counts.exceeds > 0 ? "text-red-400" : "text-emerald-400"}`}>
                 {designCheckSummary.counts.pass}✓{designCheckSummary.counts.exceeds > 0 ? ` ${designCheckSummary.counts.exceeds}✗` : ""}
               </span>
+              {designCheckSummary.counts.exceeds > 0 && (
+                <span className="text-[10px] text-amber-400/80 border border-amber-500/20 bg-amber-500/8 rounded-full px-2 py-0.5 hidden sm:inline">
+                  Widen base or reduce wind
+                </span>
+              )}
             </div>
-            {designCheckSummary.counts.exceeds > 0 && (
-              <span className="text-xs text-slate-400 border border-white/10 bg-white/5 rounded-full px-3 py-0.5">
-                Widen base or reduce wind speed to pass all checks
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -848,17 +905,34 @@ export default function Page() {
               </div>
             ) : null}
 
-            {tabContent}
+            <div key={activeTab} className="tab-content-enter">
+              {tabContent}
+            </div>
           </div>
         </div>
       </div>
 
-      <footer className="border-t border-line bg-white/80">
-        <div className="mx-auto max-w-[1700px] px-4 py-6 text-sm leading-7 text-steel sm:px-6 lg:px-8">
-          Preliminary research visualization only. Final member capacities,
-          connection design, foundation sizing, and serviceability checks
-          require ASCE/SEI 10-15 and ANSI/TIA-222-H compliance verified by a
-          qualified structural engineer.
+      <footer className="border-t border-white/8 bg-[#040c17]">
+        <div className="mx-auto max-w-[1700px] px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-7 text-slate-500">
+              Preliminary research visualization only — not a stamped structural design.
+              Final capacities require ASCE/SEI 10-15 + ANSI/TIA-222-H review by a licensed engineer.
+            </p>
+            <div className="flex items-center gap-4 shrink-0">
+              <span className="text-xs text-slate-600 uppercase tracking-widest">
+                Bocchini Research Group · Lehigh University
+              </span>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="text-xs text-cyan-600 hover:text-cyan-400 transition-colors"
+                title="Copy shareable link"
+              >
+                Share this config ↗
+              </button>
+            </div>
+          </div>
         </div>
       </footer>
 
